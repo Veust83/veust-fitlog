@@ -36,13 +36,13 @@ body{background:#050811;color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFo
   <div id="tab-w" class="space-y-3.5">
     <div class="card p-3 flex items-center justify-between">
       <label class="text-xs text-slate-300">Poids du jour (kg) :</label>
-      <input type="number" step="0.1" id="bw" value="110.1" class="w-24 bg-[#080c18] border border-[#1b2234] rounded-lg px-2 py-1 text-right font-bold text-[#22c55e] text-sm">
+      <input type="number" step="0.1" id="bw" value="109.5" class="w-24 bg-[#080c18] border border-[#1b2234] rounded-lg px-2 py-1 text-right font-bold text-[#22c55e] text-sm">
     </div>
     <div id="list" class="space-y-3.5"></div>
   </div>
   <div id="tab-s" class="hidden space-y-4">
     <div class="card p-4 space-y-3">
-      <h2 class="font-bold text-[#22c55e] text-xs uppercase">Exporter pour Gemini</h2>
+      <h2 class="font-bold text-[#22c55e] text-xs uppercase">1. Exporter pour Gemini</h2>
       <button onclick="copyMd()" class="w-full py-2.5 bg-[#22c55e] text-slate-950 rounded-lg font-bold text-xs uppercase">Copier le résumé Markdown</button>
       <p id="cf" class="text-xs text-center text-[#22c55e] hidden">Copié !</p>
     </div>
@@ -60,10 +60,10 @@ body{background:#050811;color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFo
 <nav class="fixed bottom-0 left-0 right-0 bg-[#050811]/95 border-t border-[#1b2234] flex justify-around p-3 z-40 max-w-md mx-auto backdrop-blur" style="padding-bottom:calc(.75rem + env(safe-area-inset-bottom,0px))">
   <button onclick="tab('w')" id="nw" class="text-[#22c55e] font-bold text-xs flex flex-col items-center gap-1"><span class="text-base">🏋️‍♂️</span>Séance</button>
   <button onclick="tab('s')" id="ns" class="text-slate-400 text-xs flex flex-col items-center gap-1"><span class="text-base">🔄</span>Sync Gemini</button>
+  <a href="stats.html" class="text-slate-400 text-xs flex flex-col items-center gap-1"><span class="text-base">📊</span>Stats</a>
 </nav>
 
 <script>
-/* ===== Moteur d'animation : cinématique inverse 2 segments, vue de profil ===== */
 const D=Math.PI/180,C=Math.cos,Sn=Math.sin;
 const SEAT='<rect x="22" y="61" width="30" height="4" rx="2" fill="#334155"/><rect x="19" y="24" width="5" height="40" rx="2" fill="#334155"/>';
 const E={
@@ -114,7 +114,6 @@ function frame(ms){
   requestAnimationFrame(frame);
 }
 
-/* ===== Données ===== */
 const S=(n,w,r,u='reps')=>Array.from({length:n},(_,i)=>{const R=[].concat(r);return{weight:w,reps:R[i]??R[0],unit:u,done:false}});
 const X=(name,muscle,animType,restSec,note,sets)=>({name,muscle,animType,restSec,note,sets});
 const defaultWorkout=()=>({title:"Tour du Monde #4 (3 Séries)",exercises:[
@@ -168,117 +167,48 @@ function render(){
 }
 
 function upd(i,j,f,v){prog.exercises[i].sets[j][f]=parseFloat(v)||0;save()}
+function done(i,j){const s=prog.exercises[i].sets[j];s.done=!s.done;save();render();if(s.done && rest(prog.exercises[i])>0)timer(rest(prog.exercises[i]),"Repos",true)}
+function exTimer(sec,i,j){timer(sec,"Exercice",false,()=>{prog.exercises[i].sets[j].done=true;save();render();const r=rest(prog.exercises[i]);if(r>0)timer(r,"Repos",true)})}
 
-function done(i,j){
-  const s=prog.exercises[i].sets[j];
-  s.done=!s.done;
-  save();render();
-  if(s.done && rest(prog.exercises[i])>0){
-    timer(rest(prog.exercises[i]),"Repos",true);
-  }
-}
-
-function exTimer(sec,i,j){
-  timer(sec,"Exercice",false,()=>{
-    prog.exercises[i].sets[j].done=true;
-    save();render();
-    const r=rest(prog.exercises[i]);
-    if(r>0)timer(r,"Repos",true);
-  });
-}
-
-/* ===== Chrono + Appel Raccourci iOS Pause90 ===== */
-function triggerShortcut(sec){
-  try{
-    window.location.href="shortcuts://run-shortcut?name=Pause90&input=text&text="+encodeURIComponent(sec);
-  }catch(e){}
-}
-
-function beep(){
-  try{
-    const c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();
-    o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.value=.2;o.start();o.stop(c.currentTime+.35);
-  }catch(e){}
-}
-
+function triggerShortcut(sec){try{window.location.href="shortcuts://run-shortcut?name=Pause90&input=text&text="+encodeURIComponent(sec)}catch(e){}}
+function beep(){try{const c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.value=.2;o.start();o.stop(c.currentTime+.35)}catch(e){}}
 function timer(sec,label,runIOS,cb){
-  clearInterval(ti);
-  tEnd=Date.now()+sec*1000;
+  clearInterval(ti);tEnd=Date.now()+sec*1000;
   const d=document.getElementById("td"),l=document.getElementById("tl"),ex=label==="Exercice";
-  l.innerText=label+" :";
-  l.className="text-[11px] font-semibold uppercase "+(ex?"text-[#fb923c]":"text-slate-400");
+  l.innerText=label+" :";l.className="text-[11px] font-semibold uppercase "+(ex?"text-[#fb923c]":"text-slate-400");
   d.className="font-mono text-base font-bold "+(ex?"text-[#fb923c]":"text-[#22c55e]");
-  
-  const tick=()=>{
-    const r=Math.max(0,Math.ceil((tEnd-Date.now())/1000));
-    d.innerText=String(Math.floor(r/60)).padStart(2,"0")+":"+String(r%60).padStart(2,"0");
-    if(r<=0){
-      clearInterval(ti);
-      tEnd=0;
-      d.innerText="FINI !";
-      beep();
-      cb&&cb();
-    }
-  };
-  tick();
-  ti=setInterval(tick,250);
+  const tick=()=>{const r=Math.max(0,Math.ceil((tEnd-Date.now())/1000));d.innerText=String(Math.floor(r/60)).padStart(2,"0")+":"+String(r%60).padStart(2,"0");if(r<=0){clearInterval(ti);tEnd=0;d.innerText="FINI !";beep();cb&&cb()}};
+  tick();ti=setInterval(tick,250);
   if(runIOS) setTimeout(()=>triggerShortcut(sec),120);
 }
+document.addEventListener("visibilitychange",()=>{if(!document.hidden && tEnd>0){const r=Math.max(0,Math.ceil((tEnd-Date.now())/1000)),d=document.getElementById("td");if(r<=0){clearInterval(ti);tEnd=0;d.innerText="FINI !"}else d.innerText=String(Math.floor(r/60)).padStart(2,"0")+":"+String(r%60).padStart(2,"0")}});
+function stopT(){clearInterval(ti);tEnd=0;document.getElementById("tl").innerText="Chrono :";document.getElementById("td").innerText="01:30"}
 
-document.addEventListener("visibilitychange",()=>{
-  if(!document.hidden && tEnd>0){
-    const r=Math.max(0,Math.ceil((tEnd-Date.now())/1000));
-    const d=document.getElementById("td");
-    if(r<=0){clearInterval(ti);tEnd=0;d.innerText="FINI !";}
-    else d.innerText=String(Math.floor(r/60)).padStart(2,"0")+":"+String(r%60).padStart(2,"0");
-  }
-});
-
-function stopT(){
-  clearInterval(ti);
-  tEnd=0;
-  document.getElementById("tl").innerText="Chrono :";
-  document.getElementById("td").innerText="01:30";
-}
-
-/* ===== Onglets / Sync ===== */
 function tab(t){
   document.getElementById("tab-w").classList.toggle("hidden",t!=="w");
   document.getElementById("tab-s").classList.toggle("hidden",t!=="s");
   document.getElementById("nw").className=(t==="w"?"text-[#22c55e] font-bold":"text-slate-400")+" text-xs flex flex-col items-center gap-1";
   document.getElementById("ns").className=(t==="s"?"text-[#22c55e] font-bold":"text-slate-400")+" text-xs flex flex-col items-center gap-1";
 }
-
 function copyMd(){
   let md=`### Bilan Séance du ${new Date().toLocaleDateString("fr-CH")} - ${prog.title}\n- **Poids :** ${document.getElementById("bw").value} kg\n- **Volume total :** ${vol()} kg\n\n`;
-  prog.exercises.forEach(ex=>{
-    const d=ex.sets.filter(s=>s.done);
-    if(d.length)md+=`- **${ex.name}** : ${d.length} séries (${d.map(s=>`${s.reps}${s.unit==='sec'?'s':s.unit==='min'?'min':''} @${s.weight}kg`).join(", ")})\n`;
-  });
+  prog.exercises.forEach(ex=>{const d=ex.sets.filter(s=>s.done);if(d.length)md+=`- **${ex.name}** : ${d.length} séries (${d.map(s=>`${s.reps}${s.unit==='sec'?'s':s.unit==='min'?'min':''} @${s.weight}kg`).join(", ")})\n`});
   try{navigator.clipboard.writeText(md)}catch(e){}
   const f=document.getElementById("cf");f.classList.remove("hidden");setTimeout(()=>f.classList.add("hidden"),3000);
 }
-
 function imp(){
   const f=document.getElementById("if");
   try{
     const raw=document.getElementById("jb").value.trim().replace(/^```json/i,"").replace(/^```/,"").replace(/```$/,"").trim(),p=JSON.parse(raw);
     if(!Array.isArray(p.exercises))throw 0;
-    prog={
-      title:p.title||p.name||"Séance personnalisée",
-      exercises:p.exercises.map(e=>({
-        name:e.name,muscle:e.muscle||"",animType:e.animType||"chest_push",restSec:e.restSec!==undefined?e.restSec:90,note:e.note||e.notes||"",
-        sets:(e.sets||[]).map(s=>({weight:parseFloat(s.weight)||0,reps:parseInt(s.reps)||12,unit:s.unit||"reps",done:Boolean(s.done||s.completed)}))
-      }))
-    };
+    prog={title:p.title||p.name||"Séance personnalisée",exercises:p.exercises.map(e=>({name:e.name,muscle:e.muscle||"",animType:e.animType||"chest_push",restSec:e.restSec!==undefined?e.restSec:90,note:e.note||e.notes||"",sets:(e.sets||[]).map(s=>({weight:parseFloat(s.weight)||0,reps:parseInt(s.reps)||12,unit:s.unit||"reps",done:Boolean(s.done||s.completed)}))}))};
     save();render();tab("w");
   }catch(e){f.innerText="Erreur : format JSON non valide.";f.className="text-xs text-center text-rose-400 block"}
 }
-
 function resetP(){prog=defaultWorkout();save();render();tab("w")}
 try{const s=localStorage.getItem(KEY);if(s)prog=JSON.parse(s)}catch(e){}
-render();
-requestAnimationFrame(frame);
+if(location.hash==="#sync")tab("s");
+render();requestAnimationFrame(frame);
 </script>
 </body>
 </html>
