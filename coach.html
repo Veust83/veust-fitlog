@@ -4,89 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Veust FitLog - Coach</title>
-<style>
-:root{color-scheme:dark}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:#050811;color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding-bottom:7rem;line-height:1.4}
-
-/* Header identique à index.html */
-header{position:fixed;top:0;left:0;right:0;z-index:50;background:rgba(5,8,17,.95);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid #1b2234;padding-top:env(safe-area-inset-top,0px)}
-.h-top{padding:.5rem 1rem;max-width:28rem;margin:0 auto;display:flex;justify-content:space-between;align-items:center}
-.h-title{font-size:.875rem;font-weight:700;color:#22c55e}
-.h-sub{font-size:11px;color:#94a3b8}
-.h-vol-lbl{font-size:9px;color:#94a3b8;text-transform:uppercase;display:block;text-align:right}
-.h-vol-val{font-size:.875rem;font-weight:700;display:block;text-align:right}
-.h-bot{background:#0b0f1a;border-top:1px solid #1b2234;padding:.5rem 1rem;max-width:28rem;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
-.t-wrap{display:flex;align-items:center;gap:.5rem}
-.t-lbl{font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase}
-.t-val{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:1rem;font-weight:700;color:#22c55e}
-.t-btns{display:flex;gap:.375rem}
-.btn-t{padding:.25rem .5rem;border-radius:.25rem;font-size:11px;border:1px solid #1b2234;background:#141b2d;color:#f1f5f9;cursor:pointer}
-.btn-t90{background:#22c55e;color:#020617;font-weight:700;border-color:#22c55e}
-.btn-stop{background:rgba(76,5,25,.7);border-color:rgba(136,19,55,.6);color:#fda4af}
-
-/* Contenu Coach */
-.spacer{height:calc(6rem + env(safe-area-inset-top,0px))}
-main{padding:.875rem;max-width:28rem;margin:0 auto;display:flex;flex-direction:column;gap:1rem}
-.card{background:#0f1422;border:1px solid #1b2234;border-radius:.75rem;padding:1rem;display:flex;flex-direction:column;gap:.75rem}
-.c-title-green{font-weight:700;color:#22c55e;font-size:.75rem;text-transform:uppercase}
-.c-title-orange{font-weight:700;color:#fb923c;font-size:.75rem;text-transform:uppercase}
-.hint{font-size:10px;color:#94a3b8;line-height:1.4}
-.act-row{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
-.btn-sub{padding:.5rem;border-radius:.5rem;font-size:.75rem;font-weight:600;border:1px solid #1b2234;background:#141b2d;color:#e2e8f0;cursor:pointer}
-.btn-clear{background:rgba(76,5,25,.45);border-color:rgba(136,19,55,.5);color:#fda4af}
-textarea{width:100%;background:#080c18;border:1px solid #1b2234;border-radius:.5rem;padding:.5rem;font-size:.75rem;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#f1f5f9;resize:vertical}
-.btn-full{width:100%;padding:.65rem;border-radius:.5rem;font-weight:700;font-size:.75rem;text-transform:uppercase;border:none;cursor:pointer}
-.btn-green{background:#22c55e;color:#020617}
-.btn-orange{background:#fb923c;color:#020617}
-.btn-outline{width:100%;padding:.55rem;border:1px solid #1b2234;background:transparent;color:#94a3b8;border-radius:.5rem;font-size:.75rem;cursor:pointer}
-.msg{font-size:.75rem;text-align:center;display:none}
-
-/* Navigation identique */
-nav{position:fixed;bottom:0;left:0;right:0;background:rgba(5,8,17,.95);border-top:1px solid #1b2234;display:flex;justify-content:space-around;padding:.75rem;z-index:40;max-width:28rem;margin:0 auto;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding-bottom:calc(.75rem + env(safe-area-inset-bottom,0px))}
-nav a{text-decoration:none;font-size:.75rem;display:flex;flex-direction:column;align-items:center;gap:.25rem;color:#94a3b8}
-nav a.active{color:#22c55e;font-weight:700}
-nav span.ico{font-size:1rem}
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-<header>
-  <div class="h-top">
-    <div>
-      <div class="h-title">VEUST FITLOG</div>
-      <div class="h-sub" id="ttl">Espace Coach & Sync</div>
-    </div>
-    <div>
-      <span class="h-vol-lbl">Tonnage</span>
-      <span class="h-vol-val" id="vol">0 kg</span>
-    </div>
-  </div>
-  <div class="h-bot">
-    <div class="t-wrap">
-      <span id="tl" class="t-lbl">Chrono :</span>
-      <span id="td" class="t-val">01:30</span>
-    </div>
-    <div class="t-btns">
-      <button onclick="timer(60,'Repos',true)" class="btn-t">60s</button>
-      <button onclick="timer(90,'Repos',true)" class="btn-t btn-t90">90s</button>
-      <button onclick="stopT()" class="btn-t btn-stop">Stop</button>
-    </div>
-  </div>
-</header>
-<div class="spacer"></div>
-
 <main>
   <div class="card">
     <h2 class="c-title-green">1. Exporter le bilan pour Gemini</h2>
-    <p class="hint">Copie le résumé complet de ta séance cochée (poids, tonnage et séries validées) pour l'envoyer au coach.</p>
+    <p class="hint">Copie le résumé de ta séance en cours (poids, tonnage et séries cochées) pour l'envoyer au coach.</p>
     <button onclick="copyMd()" class="btn-full btn-green">Copier le résumé Markdown</button>
     <p id="cf" class="msg" style="color:#22c55e">Résumé copié dans le presse-papiers !</p>
   </div>
 
   <div class="card">
+    <h2 class="c-title-green">Programmes enregistrés</h2>
+    <div class="act-row" id="progs"></div>
+    <p class="hint">Remplace la séance en cours par le programme choisi.</p>
+  </div>
+
+  <div class="card">
     <h2 class="c-title-orange">2. Charger un programme JSON</h2>
-    <p class="hint">animType : bike, plank, leg_ext, leg_curl, chest_push, row_pull, lat_pull, shoulder, curl, triceps, bridge</p>
+    <p class="hint">animType : bike, plank, leg_ext, leg_curl, chest_push, row_pull, lat_pull, shoulder, shrug, curl, incline_curl, hammer, triceps, side_bend, bridge. L'animation est aussi choisie d'après le nom de l'exercice.</p>
     <div class="act-row">
       <button onclick="pasteJson()" class="btn-sub">📋 Coller</button>
       <button onclick="clearJson()" class="btn-sub btn-clear">🗑️ Effacer</button>
@@ -96,121 +33,49 @@ nav span.ico{font-size:1rem}
     <p id="if" class="msg" style="color:#fb7185"></p>
   </div>
 
-  <button onclick="resetP()" class="btn-outline">Recharger le programme par défaut</button>
+  <div class="card">
+    <button id="iosBtn" onclick="setIos()" class="btn-sub"></button>
+    <p class="hint">OFF (conseillé) : tu restes sur la page, l'écran reste allumé pendant le chrono, bip + flash à la fin. ON : iOS bascule brièvement dans Raccourcis (inévitable), utile si tu verrouilles l'écran.</p>
+  </div>
 </main>
 
-<nav>
-  <a href="index.html"><span class="ico">🏋️‍♂️</span>Séance</a>
-  <a href="coach.html" class="active"><span class="ico">📣</span>Coach</a>
-  <a href="stats.html"><span class="ico">📊</span>Stats</a>
-</nav>
-
+<script src="common.js"></script>
 <script>
-const KEY="veust_active_program_v6";
-const BW_KEY="veust_bodyweight";
-let prog=null,ti=null,tEnd=0;
+mountShell("coach.html");
+showIos();
 
-function syncHeader(){
-  try{
-    const raw=localStorage.getItem(KEY);
-    if(raw){
-      prog=JSON.parse(raw);
-      if(prog.title) document.getElementById("ttl").innerText=prog.title;
-      document.getElementById("vol").innerText=calcVol().toLocaleString("fr-CH")+" kg";
-    }
-  }catch(e){}
-}
+$("progs").innerHTML=Object.keys(PROGRAMS).map(k=>`<button onclick="loadProg('${k}')" class="btn-sub btn-prog">${esc(PROGRAMS[k].label)}</button>`).join("");
 
-function calcVol(){
-  if(!prog||!prog.exercises) return 0;
-  let t=0;
-  prog.exercises.forEach(e=>(e.sets||[]).forEach(s=>{if(s.done&&s.unit!=="sec"&&s.unit!=="min")t+=(+s.weight||0)*(+s.reps||0)}));
-  return t;
+function hasProgress(){return getProg().exercises.some(e=>e.sets.some(s=>s.done))}
+function loadProg(k){
+  if(hasProgress()&&!confirm("La séance en cours a des séries cochées. Les remplacer ?"))return;
+  saveProg(fixTypes(PROGRAMS[k].make()));
+  location.href="index.html";
 }
 
 function copyMd(){
-  if(!prog) return;
-  const bw=localStorage.getItem(BW_KEY)||"109.5";
-  let md=`### Bilan Séance du ${new Date().toLocaleDateString("fr-CH")} - ${prog.title}\n- **Poids :** ${bw} kg\n- **Volume total :** ${calcVol()} kg\n\n`;
-  prog.exercises.forEach(ex=>{
-    const d=(ex.sets||[]).filter(s=>s.done);
-    if(d.length) md+=`- **${ex.name}** : ${d.length} séries (${d.map(s=>`${s.reps}${s.unit==='sec'?'s':s.unit==='min'?'min':''} @${s.weight}kg`).join(", ")})\n`;
-  });
-  try{navigator.clipboard.writeText(md)}catch(e){}
-  const f=document.getElementById("cf");
-  f.style.display="block";
-  setTimeout(()=>f.style.display="none",3000);
+  try{navigator.clipboard.writeText(mdFromProg(getProg()))}catch(e){}
+  const f=$("cf");f.style.display="block";setTimeout(()=>f.style.display="none",3000);
 }
 
 async function pasteJson(){
-  const box=document.getElementById("jb"),f=document.getElementById("if");
-  f.style.display="none";
-  try{
-    const txt=await navigator.clipboard.readText();
-    box.value=txt;
-  }catch(e){
-    box.focus();
-    f.innerText="Appuie dans la case puis sur « Coller » sur ton clavier iPhone.";
-    f.style.display="block";
-  }
+  const f=$("if");f.style.display="none";
+  try{$("jb").value=await navigator.clipboard.readText()}
+  catch(e){$("jb").focus();f.innerText="Appuie dans la case puis sur « Coller » sur ton clavier iPhone.";f.style.display="block"}
 }
-
-function clearJson(){
-  const box=document.getElementById("jb"),f=document.getElementById("if");
-  box.value="";
-  f.style.display="none";
-  box.focus();
-}
+function clearJson(){$("jb").value="";$("if").style.display="none";$("jb").focus()}
 
 function imp(){
-  const f=document.getElementById("if");
+  const f=$("if");
   try{
-    const raw=document.getElementById("jb").value.trim().replace(/^```json/i,"").replace(/^```/,"").replace(/```$/,"").trim();
+    const raw=$("jb").value.trim().replace(/^```json/i,"").replace(/^```/,"").replace(/```$/,"").trim();
     const p=JSON.parse(raw);
-    if(!Array.isArray(p.exercises)) throw 0;
-    const newProg={
-      title:p.title||p.name||"Séance personnalisée",
-      exercises:p.exercises.map(e=>({
-        name:e.name,
-        muscle:e.muscle||"",
-        animType:e.animType||"chest_push",
-        restSec:e.restSec!==undefined?e.restSec:90,
-        note:e.note||e.notes||"",
-        sets:(e.sets||[]).map(s=>({
-          weight:parseFloat(s.weight)||0,
-          reps:parseInt(s.reps)||12,
-          unit:s.unit||"reps",
-          done:Boolean(s.done||s.completed)
-        }))
-      }))
-    };
-    localStorage.setItem(KEY,JSON.stringify(newProg));
-    window.location.href="index.html";
-  }catch(e){
-    f.innerText="Erreur : format JSON non valide.";
-    f.style.display="block";
-  }
+    if(!Array.isArray(p.exercises))throw 0;
+    if(hasProgress()&&!confirm("La séance en cours a des séries cochées. Les remplacer ?"))return;
+    saveProg(normProg(p));
+    location.href="index.html";
+  }catch(e){f.innerText="Erreur : format JSON non valide.";f.style.display="block"}
 }
-
-function resetP(){
-  localStorage.removeItem(KEY);
-  window.location.href="index.html";
-}
-
-function triggerShortcut(sec){try{window.location.href="shortcuts://run-shortcut?name=Pause90&input=text&text="+encodeURIComponent(sec)}catch(e){}}
-function beep(){try{const c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.value=.2;o.start();o.stop(c.currentTime+.35)}catch(e){}}
-function timer(sec,label,runIOS){
-  clearInterval(ti);tEnd=Date.now()+sec*1000;
-  const d=document.getElementById("td"),l=document.getElementById("tl");
-  l.innerText=label+" :";
-  const tick=()=>{const r=Math.max(0,Math.ceil((tEnd-Date.now())/1000));d.innerText=String(Math.floor(r/60)).padStart(2,"0")+":"+String(r%60).padStart(2,"0");if(r<=0){clearInterval(ti);tEnd=0;d.innerText="FINI !";beep()}};
-  tick();ti=setInterval(tick,250);
-  if(runIOS) setTimeout(()=>triggerShortcut(sec),120);
-}
-document.addEventListener("visibilitychange",()=>{if(!document.hidden && tEnd>0){const r=Math.max(0,Math.ceil((tEnd-Date.now())/1000)),d=document.getElementById("td");if(r<=0){clearInterval(ti);tEnd=0;d.innerText="FINI !"}else d.innerText=String(Math.floor(r/60)).padStart(2,"0")+":"+String(r%60).padStart(2,"0")}});
-function stopT(){clearInterval(ti);tEnd=0;document.getElementById("tl").innerText="Chrono :";document.getElementById("td").innerText="01:30"}
-
-syncHeader();
 </script>
 </body>
 </html>
