@@ -1,0 +1,75 @@
+{
+  "sessions": [
+    {
+      "date": "31.10.2026",
+      "title": "Tour du Monde #1",
+      "bodyweight": 111.1,
+      "tonnage": 3522,
+      "exercises": [
+        { "name": "Vélo d'appartement", "summary": "10 min @ 0 kg" },
+        { "name": "Planche sur les coudes", "summary": "2 × 30s" },
+        { "name": "Leg Extension / Leg Curl", "summary": "2 × 12-15 @ 20-30 kg" },
+        { "name": "Développé poitrine / Rowing / Tirage", "summary": "2 × 12-15 @ 30 kg" },
+        { "name": "Épaules / Biceps / Triceps", "summary": "2 × 12-15 @ 5-15 kg" }
+      ]
+    },
+    {
+      "date": "02.11.2026",
+      "title": "Tour du Monde #2",
+      "bodyweight": 110.8,
+      "tonnage": 5086,
+      "exercises": [
+        { "name": "Circuits complets (2 séries)", "summary": "Progression charges +44%" }
+      ]
+    },
+    {
+      "date": "05.11.2026",
+      "title": "Tour du Monde #3",
+      "bodyweight": 110.4,
+      "tonnage": 5010,
+      "exercises": [
+        { "name": "Circuits complets (2 séries)", "summary": "Consolidation technique" }
+      ]
+    },
+    {
+      "date": "09.11.2026",
+      "title": "Tour du Monde #4 (3 Séries)",
+      "bodyweight": 110.1,
+      "tonnage": 7410,
+      "exercises": [
+        { "name": "Pec Papillon (Pec Deck)", "summary": "12 @ 45kg, 12 @ 40kg" },
+        { "name": "Tirage vertical & Rowing", "summary": "Montée jusqu'à 50 kg" },
+        { "name": "Jambes & Bras (3 séries)", "summary": "Volume record 7'410 kg" }
+      ]
+    },
+    {
+      "date": "13.11.2026",
+      "title": "Push #1 (Pecs, Épaules, Triceps)",
+      "bodyweight": 110.1,
+      "tonnage": 3980,
+      "exercises": [
+        { "name": "Pec Papillon (Pec Deck)", "summary": "12 @ 45kg, 12 @ 40kg" },
+        { "name": "Développé poitrine assis", "summary": "12 @ 45kg, 10 @ 45kg" },
+        { "name": "Développé militaire haltères", "summary": "2 × 12 @ 8kg" },
+        { "name": "Développé Triceps & Dips assistés", "summary": "30kg & 40kg réels" }
+      ]
+    },
+    {
+      "date": "14.11.2026",
+      "title": "Pull #1 (Dos, Trapèzes, Biceps)",
+      "bodyweight": 109.5,
+      "tonnage": 4554,
+      "note": "Échec atteint sur 3e série Curl incliné et Curl marteau.",
+      "exercises": [
+        { "name": "Vélo d'appartement", "summary": "13 min @ 0kg" },
+        { "name": "Tirage vertical poitrine", "summary": "12 @ 45kg, 12 @ 45kg, 10 @ 45kg" },
+        { "name": "Rowing assis (Appui ventral)", "summary": "12 @ 45kg, 12 @ 45kg, 10 @ 45kg" },
+        { "name": "Shrugs assis haltères", "summary": "3 × 15 @ 12kg" },
+        { "name": "Curl incliné haltères (60°)", "summary": "12 @ 8kg, 10 @ 8kg, 10 @ 8kg" },
+        { "name": "Curl marteau haltères", "summary": "10 @ 8kg, 10 @ 8kg, 8 @ 8kg" },
+        { "name": "Curl poignets (Avant-bras)", "summary": "15 @ 5kg sup., 15 @ 5kg pro." },
+        { "name": "Inclinaisons latérales haltère", "summary": "12 @ 12kg, 15 @ 12kg" }
+      ]
+    }
+  ]
+}
