@@ -32,6 +32,9 @@ main{padding:.875rem;max-width:28rem;margin:0 auto;display:flex;flex-direction:c
 .c-title-green{font-weight:700;color:#22c55e;font-size:.75rem;text-transform:uppercase}
 .c-title-orange{font-weight:700;color:#fb923c;font-size:.75rem;text-transform:uppercase}
 .hint{font-size:10px;color:#94a3b8;line-height:1.4}
+.act-row{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+.btn-sub{padding:.5rem;border-radius:.5rem;font-size:.75rem;font-weight:600;border:1px solid #1b2234;background:#141b2d;color:#e2e8f0;cursor:pointer}
+.btn-clear{background:rgba(76,5,25,.45);border-color:rgba(136,19,55,.5);color:#fda4af}
 textarea{width:100%;background:#080c18;border:1px solid #1b2234;border-radius:.5rem;padding:.5rem;font-size:.75rem;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#f1f5f9;resize:vertical}
 .btn-full{width:100%;padding:.65rem;border-radius:.5rem;font-weight:700;font-size:.75rem;text-transform:uppercase;border:none;cursor:pointer}
 .btn-green{background:#22c55e;color:#020617}
@@ -84,6 +87,10 @@ nav span.ico{font-size:1rem}
   <div class="card">
     <h2 class="c-title-orange">2. Charger un programme JSON</h2>
     <p class="hint">animType : bike, plank, leg_ext, leg_curl, chest_push, row_pull, lat_pull, shoulder, curl, triceps, bridge</p>
+    <div class="act-row">
+      <button onclick="pasteJson()" class="btn-sub">📋 Coller</button>
+      <button onclick="clearJson()" class="btn-sub btn-clear">🗑️ Effacer</button>
+    </div>
     <textarea id="jb" rows="6" placeholder="Colle le JSON du programme ici..."></textarea>
     <button onclick="imp()" class="btn-full btn-orange">Charger et démarrer la séance</button>
     <p id="if" class="msg" style="color:#fb7185"></p>
@@ -133,6 +140,26 @@ function copyMd(){
   const f=document.getElementById("cf");
   f.style.display="block";
   setTimeout(()=>f.style.display="none",3000);
+}
+
+async function pasteJson(){
+  const box=document.getElementById("jb"),f=document.getElementById("if");
+  f.style.display="none";
+  try{
+    const txt=await navigator.clipboard.readText();
+    box.value=txt;
+  }catch(e){
+    box.focus();
+    f.innerText="Appuie dans la case puis sur « Coller » sur ton clavier iPhone.";
+    f.style.display="block";
+  }
+}
+
+function clearJson(){
+  const box=document.getElementById("jb"),f=document.getElementById("if");
+  box.value="";
+  f.style.display="none";
+  box.focus();
 }
 
 function imp(){
