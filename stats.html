@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Veust FitLog - Stats</title>
+<script src="[https://cdn.tailwindcss.com/3.4.17](https://cdn.tailwindcss.com/3.4.17)"></script>
+<style>
+:root{color-scheme:dark}
+body{background:#050811;color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding-bottom:7rem}
+.card{background:#0f1422;border:1px solid #1b2234;border-radius:.75rem}
+</style>
+</head>
+<body>
+<header class="fixed top-0 left-0 right-0 z-50 bg-[#050811]/95 backdrop-blur border-b border-[#1b2234]" style="padding-top:env(safe-area-inset-top,0px)">
+  <div class="px-4 py-3 max-w-md mx-auto flex justify-between items-center">
+    <div>
+      <h1 class="text-sm font-bold text-[#22c55e]">VEUST FITLOG</h1>
+      <p class="text-[11px] text-slate-400">Tableau de bord & Historique</p>
+    </div>
+    <div class="text-right">
+      <span class="text-[9px] text-slate-400 uppercase block">Tonnage Cumulé</span>
+      <span class="text-sm font-bold text-[#22c55e]" id="tot-vol">0 kg</span>
+    </div>
+  </div>
+</header>
+<div style="height:calc(4.5rem + env(safe-area-inset-top,0px))"></div>
+
+<main class="p-3.5 max-w-md mx-auto space-y-3.5">
+  <!-- Cartes KPI -->
+  <div class="grid grid-cols-3 gap-2">
+    <div class="card p-2.5 text-center">
+      <span class="text-[9px] text-slate-400 uppercase block">Séances</span>
+      <span class="text-base font-bold text-slate-100" id="kpi-sess">-</span>
+    </div>
+    <div class="card p-2.5 text-center">
+      <span class="text-[9px] text-slate-400 uppercase block">Poids Actuel</span>
+      <span class="text-base font-bold text-[#22c55e]" id="kpi-bw">-</span>
+    </div>
+    <div class="card p-2.5 text-center">
+      <span class="text-[9px] text-slate-400 uppercase block">Évolution</span>
+      <span class="text-base font-bold text-[#fb923c]" id="kpi-diff">-</span>
+    </div>
+  </div>
+
+  <!-- Graphique Tonnage -->
+  <div class="card p-3.5 space-y-2.5">
+    <div class="flex justify-between items-center">
+      <h2 class="text-xs font-bold uppercase text-slate-300">Tonnage par séance (kg)</h2>
+      <span class="text-[10px] text-[#22c55e] font-semibold">Progression</span>
+    </div>
+    <div id="chart-vol" class="space-y-2 pt-1"></div>
+  </div>
+
+  <!-- Liste détaillée des séances -->
+  <div class="space-y-2.5">
+    <h2 class="text-xs font-bold uppercase text-slate-400 px-1">Détail des séances enregistrées</h2>
+    <div id="sessions-list" class="space-y-2.5"></div>
+  </div>
+</main>
+
+<nav class="fixed bottom-0 left-0 right-0 bg-[#050811]/95 border-t border-[#1b2234] flex justify-around p-3 z-40 max-w-md mx-auto backdrop-blur" style="padding-bottom:calc(.75rem + env(safe-area-inset-bottom,0px))">
+  <a href="index.html" class="text-slate-400 text-xs flex flex-col items-center gap-1"><span class="text-base">🏋️‍♂️</span>Séance</a>
+  <a href="index.html#sync" class="text-slate-400 text-xs flex flex-col items-center gap-1"><span class="text-base">🔄</span>Sync Gemini</a>
+  <a href="stats.html" class="text-[#22c55e] font-bold text-xs flex flex-col items-center gap-1"><span class="text-base">📊</span>Stats</a>
+</nav>
+
+<script>
+async function loadStats() {
+  try {
+    const res = await fetch('historique.json?t=' + Date.now());
+    const data = await res.json();
+    const sessions = data.sessions || [];
+
+    // Calculs KPI
+    const totalTonnage = sessions.reduce((acc, s) => acc + (s.tonnage || 0), 0);
+    document.getElementById('tot-vol').innerText = totalTonnage.toLocaleString('fr-CH') + ' kg';
+    document.getElementById('kpi-sess').innerText = sessions.length;
+
+    const weights = sessions.filter(s => s.bodyweight).map(s => s.bodyweight);
+    if (weights.length > 0) {
+      const first = weights[0];
+      const last = weights[weights.length - 1];
+      const diff = (last - first).toFixed(1);
+      document.getElementById('kpi-bw').innerText = last + ' kg';
+      document.getElementById('kpi-diff').innerText = (diff > 0 ? '+' : '') + diff + ' kg';
+    }
+
+    // Graphique Tonnage
+    const maxVol = Math.max(...sessions.map(s => s.tonnage || 0), 1);
+    document.getElementById('chart-vol').innerHTML = sessions.map(s => {
+      const pct = Math.round(((s.tonnage || 0) / maxVol) * 100);
+      return `
+        <div>
+          <div class="flex justify-between text-[11px] mb-1">
+            <span class="text-slate-300 font-medium truncate pr-2">${s.date} — ${s.title}</span>
+            <span class="font-mono font-bold text-[#22c55e] shrink-0">${(s.tonnage || 0).toLocaleString('fr-CH')} kg</span>
+          </div>
+          <div class="w-full bg-[#080c18] h-2 rounded-full overflow-hidden border border-[#1b2234]">
+            <div class="bg-[#22c55e] h-full rounded-full" style="width:${pct}%"></div>
+          </div>
+        </div>`;
+    }).join('');
+
+    // Liste détaillée (de la plus récente à la plus ancienne)
+    document.getElementById('sessions-list').innerHTML = [...sessions].reverse().map(s => `
+      <details class="card p-3 group">
+        <summary class="list-none flex justify-between items-center cursor-pointer">
+          <div>
+            <span class="text-[10px] text-[#22c55e] font-bold uppercase">${s.date} ${s.bodyweight ? '• ' + s.bodyweight + ' kg' : ''}</span>
+            <h3 class="text-sm font-bold text-slate-100">${s.title}</h3>
+          </div>
+          <div class="text-right">
+            <span class="text-xs font-mono font-bold text-[#fb923c] block">${(s.tonnage || 0).toLocaleString('fr-CH')} kg</span>
+            <span class="text-[10px] text-slate-400">Détails ▾</span>
+          </div>
+        </summary>
+        <div class="mt-2.5 pt-2.5 border-t border-[#1b2234] space-y-1.5 text-xs text-slate-300">
+          ${(s.exercises || []).map(ex => `
+            <div class="flex justify-between gap-2">
+              <span class="font-medium text-slate-200">${ex.name}</span>
+              <span class="text-slate-400 text-right font-mono text-[11px]">${ex.summary}</span>
+            </div>
+          `).join('')}
+          ${s.note ? `<p class="text-[11px] text-[#fb923c] italic pt-1">Note : ${s.note}</p>` : ''}
+        </div>
+      </details>
+    `).join('');
+
+  } catch (err) {
+    document.getElementById('sessions-list').innerHTML = `<p class="text-xs text-rose-400 text-center">Erreur de chargement de historique.json</p>`;
+  }
+}
+loadStats();
+</script>
+</body>
+</html>
