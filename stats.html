@@ -4,131 +4,217 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Veust FitLog - Stats</title>
-<script src="[https://cdn.tailwindcss.com/3.4.17](https://cdn.tailwindcss.com/3.4.17)"></script>
 <style>
 :root{color-scheme:dark}
-body{background:#050811;color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding-bottom:7rem}
-.card{background:#0f1422;border:1px solid #1b2234;border-radius:.75rem}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#050811;color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding-bottom:7rem;line-height:1.4}
+
+/* Header identique à index.html */
+header{position:fixed;top:0;left:0;right:0;z-index:50;background:rgba(5,8,17,.95);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid #1b2234;padding-top:env(safe-area-inset-top,0px)}
+.h-top{padding:.5rem 1rem;max-width:28rem;margin:0 auto;display:flex;justify-content:space-between;align-items:center}
+.h-title{font-size:.875rem;font-weight:700;color:#22c55e}
+.h-sub{font-size:11px;color:#94a3b8}
+.h-vol-lbl{font-size:9px;color:#94a3b8;text-transform:uppercase;display:block;text-align:right}
+.h-vol-val{font-size:.875rem;font-weight:700;display:block;text-align:right}
+.h-bot{background:#0b0f1a;border-top:1px solid #1b2234;padding:.5rem 1rem;max-width:28rem;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.t-wrap{display:flex;align-items:center;gap:.5rem}
+.t-lbl{font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase}
+.t-val{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:1rem;font-weight:700;color:#22c55e}
+.t-btns{display:flex;gap:.375rem}
+.btn-t{padding:.25rem .5rem;border-radius:.25rem;font-size:11px;border:1px solid #1b2234;background:#141b2d;color:#f1f5f9;cursor:pointer}
+.btn-t90{background:#22c55e;color:#020617;font-weight:700;border-color:#22c55e}
+.btn-stop{background:rgba(76,5,25,.7);border-color:rgba(136,19,55,.6);color:#fda4af}
+
+/* Contenu principal */
+.spacer{height:calc(6rem + env(safe-area-inset-top,0px))}
+main{padding:.875rem;max-width:28rem;margin:0 auto;display:flex;flex-direction:column;gap:.875rem}
+.card{background:#0f1422;border:1px solid #1b2234;border-radius:.75rem;padding:.75rem}
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem}
+.kpi-box{background:#0f1422;border:1px solid #1b2234;border-radius:.75rem;padding:.625rem;text-align:center}
+.kpi-lbl{font-size:9px;color:#94a3b8;text-transform:uppercase;display:block;margin-bottom:.15rem}
+.kpi-val{font-size:1rem;font-weight:700}
+.green{color:#22c55e}
+.orange{color:#fb923c}
+
+/* Barres de progression */
+.sec-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem}
+.sec-title{font-size:.75rem;font-weight:700;text-transform:uppercase;color:#cbd5e1}
+.bar-item{margin-bottom:.6rem}
+.bar-item:last-child{margin-bottom:0}
+.bar-meta{display:flex;justify-content:space-between;font-size:11px;margin-bottom:.25rem;gap:.5rem}
+.bar-name{color:#cbd5e1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-num{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:700;color:#22c55e;flex-shrink:0}
+.bar-track{width:100%;height:.5rem;background:#080c18;border:1px solid #1b2234;border-radius:999px;overflow:hidden}
+.bar-fill{height:100%;background:#22c55e;border-radius:999px}
+
+/* Liste séances */
+details.card summary{list-style:none;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+details.card summary::-webkit-details-marker{display:none}
+.s-date{font-size:10px;color:#22c55e;font-weight:700;text-transform:uppercase;display:block}
+.s-title{font-size:.875rem;font-weight:700;color:#f1f5f9}
+.s-vol{font-size:.75rem;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:700;color:#fb923c;display:block;text-align:right}
+.s-det{font-size:10px;color:#94a3b8;display:block;text-align:right}
+.s-body{margin-top:.625rem;padding-top:.625rem;border-top:1px solid #1b2234;display:flex;flex-direction:column;gap:.375rem;font-size:.75rem}
+.ex-row{display:flex;justify-content:space-between;gap:.5rem}
+.ex-name{color:#e2e8f0;font-weight:500}
+.ex-sum{color:#94a3b8;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;text-align:right}
+.s-note{font-size:11px;color:#fb923c;font-style:italic;padding-top:.25rem}
+
+/* Barre de navigation du bas identique à index.html */
+nav{position:fixed;bottom:0;left:0;right:0;background:rgba(5,8,17,.95);border-top:1px solid #1b2234;display:flex;justify-content:space-around;padding:.75rem;z-index:40;max-width:28rem;margin:0 auto;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding-bottom:calc(.75rem + env(safe-area-inset-bottom,0px))}
+nav a{text-decoration:none;font-size:.75rem;display:flex;flex-direction:column;align-items:center;gap:.25rem;color:#94a3b8}
+nav a.active{color:#22c55e;font-weight:700}
+nav span.ico{font-size:1rem}
 </style>
 </head>
 <body>
-<header class="fixed top-0 left-0 right-0 z-50 bg-[#050811]/95 backdrop-blur border-b border-[#1b2234]" style="padding-top:env(safe-area-inset-top,0px)">
-  <div class="px-4 py-3 max-w-md mx-auto flex justify-between items-center">
+
+<header>
+  <div class="h-top">
     <div>
-      <h1 class="text-sm font-bold text-[#22c55e]">VEUST FITLOG</h1>
-      <p class="text-[11px] text-slate-400">Tableau de bord & Historique</p>
+      <div class="h-title">VEUST FITLOG</div>
+      <div class="h-sub" id="ttl">Stats & Historique</div>
     </div>
-    <div class="text-right">
-      <span class="text-[9px] text-slate-400 uppercase block">Tonnage Cumulé</span>
-      <span class="text-sm font-bold text-[#22c55e]" id="tot-vol">0 kg</span>
+    <div>
+      <span class="h-vol-lbl">Tonnage</span>
+      <span class="h-vol-val" id="vol">0 kg</span>
+    </div>
+  </div>
+  <div class="h-bot">
+    <div class="t-wrap">
+      <span id="tl" class="t-lbl">Chrono :</span>
+      <span id="td" class="t-val">01:30</span>
+    </div>
+    <div class="t-btns">
+      <button onclick="timer(60,'Repos',true)" class="btn-t">60s</button>
+      <button onclick="timer(90,'Repos',true)" class="btn-t btn-t90">90s</button>
+      <button onclick="stopT()" class="btn-t btn-stop">Stop</button>
     </div>
   </div>
 </header>
-<div style="height:calc(4.5rem + env(safe-area-inset-top,0px))"></div>
+<div class="spacer"></div>
 
-<main class="p-3.5 max-w-md mx-auto space-y-3.5">
-  <!-- Cartes KPI -->
-  <div class="grid grid-cols-3 gap-2">
-    <div class="card p-2.5 text-center">
-      <span class="text-[9px] text-slate-400 uppercase block">Séances</span>
-      <span class="text-base font-bold text-slate-100" id="kpi-sess">-</span>
+<main>
+  <div class="kpi-grid">
+    <div class="kpi-box">
+      <span class="kpi-lbl">Séances</span>
+      <span class="kpi-val" id="kpi-sess">-</span>
     </div>
-    <div class="card p-2.5 text-center">
-      <span class="text-[9px] text-slate-400 uppercase block">Poids Actuel</span>
-      <span class="text-base font-bold text-[#22c55e]" id="kpi-bw">-</span>
+    <div class="kpi-box">
+      <span class="kpi-lbl">Poids Actuel</span>
+      <span class="kpi-val green" id="kpi-bw">-</span>
     </div>
-    <div class="card p-2.5 text-center">
-      <span class="text-[9px] text-slate-400 uppercase block">Évolution</span>
-      <span class="text-base font-bold text-[#fb923c]" id="kpi-diff">-</span>
+    <div class="kpi-box">
+      <span class="kpi-lbl">Cumul Total</span>
+      <span class="kpi-val orange" id="kpi-tot">-</span>
     </div>
   </div>
 
-  <!-- Graphique Tonnage -->
-  <div class="card p-3.5 space-y-2.5">
-    <div class="flex justify-between items-center">
-      <h2 class="text-xs font-bold uppercase text-slate-300">Tonnage par séance (kg)</h2>
-      <span class="text-[10px] text-[#22c55e] font-semibold">Progression</span>
+  <div class="card">
+    <div class="sec-head">
+      <span class="sec-title">Tonnage par séance (kg)</span>
+      <span style="font-size:10px;color:#22c55e;font-weight:600">Progression</span>
     </div>
-    <div id="chart-vol" class="space-y-2 pt-1"></div>
+    <div id="chart-vol"></div>
   </div>
 
-  <!-- Liste détaillée des séances -->
-  <div class="space-y-2.5">
-    <h2 class="text-xs font-bold uppercase text-slate-400 px-1">Détail des séances enregistrées</h2>
-    <div id="sessions-list" class="space-y-2.5"></div>
-  </div>
+  <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;color:#94a3b8;padding:0 .25rem">Détail des séances enregistrées</div>
+  <div id="sessions-list" style="display:flex;flex-direction:column;gap:.625rem"></div>
 </main>
 
-<nav class="fixed bottom-0 left-0 right-0 bg-[#050811]/95 border-t border-[#1b2234] flex justify-around p-3 z-40 max-w-md mx-auto backdrop-blur" style="padding-bottom:calc(.75rem + env(safe-area-inset-bottom,0px))">
-  <a href="index.html" class="text-slate-400 text-xs flex flex-col items-center gap-1"><span class="text-base">🏋️‍♂️</span>Séance</a>
-  <a href="index.html#sync" class="text-slate-400 text-xs flex flex-col items-center gap-1"><span class="text-base">🔄</span>Sync Gemini</a>
-  <a href="stats.html" class="text-[#22c55e] font-bold text-xs flex flex-col items-center gap-1"><span class="text-base">📊</span>Stats</a>
+<nav>
+  <a href="index.html"><span class="ico">🏋️‍♂️</span>Séance</a>
+  <a href="index.html#sync"><span class="ico">🔄</span>Sync Gemini</a>
+  <a href="stats.html" class="active"><span class="ico">📊</span>Stats</a>
 </nav>
 
 <script>
+const KEY="veust_active_program_v6";
+let ti=null,tEnd=0;
+
+function syncHeader(){
+  try{
+    const raw=localStorage.getItem(KEY);
+    if(raw){
+      const p=JSON.parse(raw);
+      if(p.title) document.getElementById("ttl").innerText=p.title;
+      let t=0;
+      (p.exercises||[]).forEach(e=>(e.sets||[]).forEach(s=>{if(s.done&&s.unit!=="sec"&&s.unit!=="min")t+=(+s.weight||0)*(+s.reps||0)}));
+      document.getElementById("vol").innerText=t.toLocaleString("fr-CH")+" kg";
+    }
+  }catch(e){}
+}
+
+function triggerShortcut(sec){try{window.location.href="shortcuts://run-shortcut?name=Pause90&input=text&text="+encodeURIComponent(sec)}catch(e){}}
+function beep(){try{const c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.value=.2;o.start();o.stop(c.currentTime+.35)}catch(e){}}
+function timer(sec,label,runIOS){
+  clearInterval(ti);tEnd=Date.now()+sec*1000;
+  const d=document.getElementById("td"),l=document.getElementById("tl");
+  l.innerText=label+" :";
+  const tick=()=>{const r=Math.max(0,Math.ceil((tEnd-Date.now())/1000));d.innerText=String(Math.floor(r/60)).padStart(2,"0")+":"+String(r%60).padStart(2,"0");if(r<=0){clearInterval(ti);tEnd=0;d.innerText="FINI !";beep()}};
+  tick();ti=setInterval(tick,250);
+  if(runIOS) setTimeout(()=>triggerShortcut(sec),120);
+}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden && tEnd>0){const r=Math.max(0,Math.ceil((tEnd-Date.now())/1000)),d=document.getElementById("td");if(r<=0){clearInterval(ti);tEnd=0;d.innerText="FINI !"}else d.innerText=String(Math.floor(r/60)).padStart(2,"0")+":"+String(r%60).padStart(2,"0")}});
+function stopT(){clearInterval(ti);tEnd=0;document.getElementById("tl").innerText="Chrono :";document.getElementById("td").innerText="01:30"}
+
 async function loadStats() {
+  syncHeader();
   try {
     const res = await fetch('historique.json?t=' + Date.now());
     const data = await res.json();
     const sessions = data.sessions || [];
 
-    // Calculs KPI
     const totalTonnage = sessions.reduce((acc, s) => acc + (s.tonnage || 0), 0);
-    document.getElementById('tot-vol').innerText = totalTonnage.toLocaleString('fr-CH') + ' kg';
+    document.getElementById('kpi-tot').innerText = (totalTonnage / 1000).toFixed(1) + ' t';
     document.getElementById('kpi-sess').innerText = sessions.length;
 
     const weights = sessions.filter(s => s.bodyweight).map(s => s.bodyweight);
     if (weights.length > 0) {
-      const first = weights[0];
-      const last = weights[weights.length - 1];
-      const diff = (last - first).toFixed(1);
-      document.getElementById('kpi-bw').innerText = last + ' kg';
-      document.getElementById('kpi-diff').innerText = (diff > 0 ? '+' : '') + diff + ' kg';
+      document.getElementById('kpi-bw').innerText = weights[weights.length - 1] + ' kg';
     }
 
-    // Graphique Tonnage
     const maxVol = Math.max(...sessions.map(s => s.tonnage || 0), 1);
     document.getElementById('chart-vol').innerHTML = sessions.map(s => {
       const pct = Math.round(((s.tonnage || 0) / maxVol) * 100);
       return `
-        <div>
-          <div class="flex justify-between text-[11px] mb-1">
-            <span class="text-slate-300 font-medium truncate pr-2">${s.date} — ${s.title}</span>
-            <span class="font-mono font-bold text-[#22c55e] shrink-0">${(s.tonnage || 0).toLocaleString('fr-CH')} kg</span>
+        <div class="bar-item">
+          <div class="bar-meta">
+            <span class="bar-name">${s.date} — ${s.title}</span>
+            <span class="bar-num">${(s.tonnage || 0).toLocaleString('fr-CH')} kg</span>
           </div>
-          <div class="w-full bg-[#080c18] h-2 rounded-full overflow-hidden border border-[#1b2234]">
-            <div class="bg-[#22c55e] h-full rounded-full" style="width:${pct}%"></div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:${pct}%"></div>
           </div>
         </div>`;
     }).join('');
 
-    // Liste détaillée (de la plus récente à la plus ancienne)
     document.getElementById('sessions-list').innerHTML = [...sessions].reverse().map(s => `
-      <details class="card p-3 group">
-        <summary class="list-none flex justify-between items-center cursor-pointer">
+      <details class="card">
+        <summary>
           <div>
-            <span class="text-[10px] text-[#22c55e] font-bold uppercase">${s.date} ${s.bodyweight ? '• ' + s.bodyweight + ' kg' : ''}</span>
-            <h3 class="text-sm font-bold text-slate-100">${s.title}</h3>
+            <span class="s-date">${s.date} ${s.bodyweight ? '• ' + s.bodyweight + ' kg' : ''}</span>
+            <span class="s-title">${s.title}</span>
           </div>
-          <div class="text-right">
-            <span class="text-xs font-mono font-bold text-[#fb923c] block">${(s.tonnage || 0).toLocaleString('fr-CH')} kg</span>
-            <span class="text-[10px] text-slate-400">Détails ▾</span>
+          <div>
+            <span class="s-vol">${(s.tonnage || 0).toLocaleString('fr-CH')} kg</span>
+            <span class="s-det">Détails ▾</span>
           </div>
         </summary>
-        <div class="mt-2.5 pt-2.5 border-t border-[#1b2234] space-y-1.5 text-xs text-slate-300">
+        <div class="s-body">
           ${(s.exercises || []).map(ex => `
-            <div class="flex justify-between gap-2">
-              <span class="font-medium text-slate-200">${ex.name}</span>
-              <span class="text-slate-400 text-right font-mono text-[11px]">${ex.summary}</span>
+            <div class="ex-row">
+              <span class="ex-name">${ex.name}</span>
+              <span class="ex-sum">${ex.summary}</span>
             </div>
           `).join('')}
-          ${s.note ? `<p class="text-[11px] text-[#fb923c] italic pt-1">Note : ${s.note}</p>` : ''}
+          ${s.note ? `<div class="s-note">Note : ${s.note}</div>` : ''}
         </div>
       </details>
     `).join('');
 
   } catch (err) {
-    document.getElementById('sessions-list').innerHTML = `<p class="text-xs text-rose-400 text-center">Erreur de chargement de historique.json</p>`;
+    document.getElementById('sessions-list').innerHTML = `<p style="font-size:12px;color:#fb7185;text-align:center">Erreur de chargement de historique.json</p>`;
   }
 }
 loadStats();
