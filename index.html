@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Veust FitLog - Stats</title>
+<title>Veust FitLog</title>
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <style>
 :root{color-scheme:dark}
@@ -14,8 +14,8 @@ body{background:#050811;color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFo
 <body>
 <header class="fixed top-0 left-0 right-0 z-50 bg-[#050811]/95 backdrop-blur border-b border-[#1b2234]" style="padding-top:env(safe-area-inset-top,0px)">
   <div class="px-4 py-2 max-w-md mx-auto flex justify-between items-center">
-    <div><h1 class="text-sm font-bold text-[#22c55e]">VEUST FITLOG</h1><p class="text-[11px] text-slate-400">Stats & Historique</p></div>
-    <div class="text-right"><span class="text-[9px] text-slate-400 uppercase block">Tonnage Cumulé</span><span class="text-sm font-bold" id="tot-vol">0 kg</span></div>
+    <div><h1 class="text-sm font-bold text-[#22c55e]">VEUST FITLOG</h1><p class="text-[11px] text-slate-400" id="ttl">Stats & Historique</p></div>
+    <div class="text-right"><span class="text-[9px] text-slate-400 uppercase block">Tonnage</span><span class="text-sm font-bold" id="vol">0 kg</span></div>
   </div>
   <div class="bg-[#0b0f1a] border-t border-[#1b2234] px-4 py-2 max-w-md mx-auto flex items-center justify-between">
     <div class="flex items-center gap-2"><span id="tl" class="text-[11px] font-semibold text-slate-400 uppercase">Chrono :</span><span id="td" class="font-mono text-base font-bold text-[#22c55e]">01:30</span></div>
@@ -40,8 +40,8 @@ body{background:#050811;color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFo
       <span class="text-base font-bold text-[#22c55e]" id="kpi-bw">-</span>
     </div>
     <div class="card p-2.5 text-center">
-      <span class="text-[9px] text-slate-400 uppercase block">Évolution</span>
-      <span class="text-base font-bold text-[#fb923c]" id="kpi-diff">-</span>
+      <span class="text-[9px] text-slate-400 uppercase block">Cumul Total</span>
+      <span class="text-base font-bold text-[#fb923c]" id="kpi-tot">-</span>
     </div>
   </div>
 
@@ -68,36 +68,52 @@ body{background:#050811;color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFo
 </nav>
 
 <script>
+const KEY="veust_active_program_v6";
 let ti=null,tEnd=0;
+
+// Synchronise le titre et le tonnage en cours avec index.html
+function syncHeader(){
+  try{
+    const raw=localStorage.getItem(KEY);
+    if(raw){
+      const p=JSON.parse(raw);
+      if(p.title) document.getElementById("ttl").innerText=p.title;
+      let t=0;
+      (p.exercises||[]).forEach(e=>(e.sets||[]).forEach(s=>{if(s.done&&s.unit!=="sec"&&s.unit!=="min")t+=(+s.weight||0)*(+s.reps||0)}));
+      document.getElementById("vol").innerText=t.toLocaleString("fr-CH")+" kg";
+    }
+  }catch(e){}
+}
+
 function triggerShortcut(sec){try{window.location.href="shortcuts://run-shortcut?name=Pause90&input=text&text="+encodeURIComponent(sec)}catch(e){}}
 function beep(){try{const c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.value=.2;o.start();o.stop(c.currentTime+.35)}catch(e){}}
-function timer(sec,label,runIOS){
+function timer(sec,label,runIOS,cb){
   clearInterval(ti);tEnd=Date.now()+sec*1000;
-  const d=document.getElementById("td"),l=document.getElementById("tl");
-  l.innerText=label+" :";
-  const tick=()=>{const r=Math.max(0,Math.ceil((tEnd-Date.now())/1000));d.innerText=String(Math.floor(r/60)).padStart(2,"0")+":"+String(r%60).padStart(2,"0");if(r<=0){clearInterval(ti);tEnd=0;d.innerText="FINI !";beep()}};
+  const d=document.getElementById("td"),l=document.getElementById("tl"),ex=label==="Exercice";
+  l.innerText=label+" :";l.className="text-[11px] font-semibold uppercase "+(ex?"text-[#fb923c]":"text-slate-400");
+  d.className="font-mono text-base font-bold "+(ex?"text-[#fb923c]":"text-[#22c55e]");
+  const tick=()=>{const r=Math.max(0,Math.ceil((tEnd-Date.now())/1000));d.innerText=String(Math.floor(r/60)).padStart(2,"0")+":"+String(r%60).padStart(2,"0");if(r<=0){clearInterval(ti);tEnd=0;d.innerText="FINI !";beep();cb&&cb()}};
   tick();ti=setInterval(tick,250);
   if(runIOS) setTimeout(()=>triggerShortcut(sec),120);
 }
+document.addEventListener("visibilitychange",()=>{if(!document.hidden && tEnd>0){const r=Math.max(0,Math.ceil((tEnd-Date.now())/1000)),d=document.getElementById("td");if(r<=0){clearInterval(ti);tEnd=0;d.innerText="FINI !"}else d.innerText=String(Math.floor(r/60)).padStart(2,"0")+":"+String(r%60).padStart(2,"0")}});
 function stopT(){clearInterval(ti);tEnd=0;document.getElementById("tl").innerText="Chrono :";document.getElementById("td").innerText="01:30"}
 
 async function loadStats() {
+  syncHeader();
   try {
     const res = await fetch('historique.json?t=' + Date.now());
     const data = await res.json();
     const sessions = data.sessions || [];
 
     const totalTonnage = sessions.reduce((acc, s) => acc + (s.tonnage || 0), 0);
-    document.getElementById('tot-vol').innerText = totalTonnage.toLocaleString('fr-CH') + ' kg';
+    document.getElementById('kpi-tot').innerText = (totalTonnage / 1000).toFixed(1) + ' t';
     document.getElementById('kpi-sess').innerText = sessions.length;
 
     const weights = sessions.filter(s => s.bodyweight).map(s => s.bodyweight);
     if (weights.length > 0) {
-      const first = weights[0];
       const last = weights[weights.length - 1];
-      const diff = (last - first).toFixed(1);
       document.getElementById('kpi-bw').innerText = last + ' kg';
-      document.getElementById('kpi-diff').innerText = (diff > 0 ? '+' : '') + diff + ' kg';
     }
 
     const maxVol = Math.max(...sessions.map(s => s.tonnage || 0), 1);
