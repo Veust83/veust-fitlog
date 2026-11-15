@@ -6,11 +6,26 @@
       "bodyweight": 111.1,
       "tonnage": 3522,
       "exercises": [
-        { "name": "Vélo d'appartement", "summary": "10 min @ 0 kg" },
-        { "name": "Planche sur les coudes", "summary": "2 × 30s" },
-        { "name": "Leg Extension / Leg Curl", "summary": "2 × 12-15 @ 20-30 kg" },
-        { "name": "Développé poitrine / Rowing / Tirage", "summary": "2 × 12-15 @ 30 kg" },
-        { "name": "Épaules / Biceps / Triceps", "summary": "2 × 12-15 @ 5-15 kg" }
+        {
+          "name": "Vélo d'appartement",
+          "summary": "10 min @ 0 kg"
+        },
+        {
+          "name": "Planche sur les coudes",
+          "summary": "2 × 30s"
+        },
+        {
+          "name": "Leg Extension / Leg Curl",
+          "summary": "2 × 12-15 @ 20-30 kg"
+        },
+        {
+          "name": "Développé poitrine / Rowing / Tirage",
+          "summary": "2 × 12-15 @ 30 kg"
+        },
+        {
+          "name": "Épaules / Biceps / Triceps",
+          "summary": "2 × 12-15 @ 5-15 kg"
+        }
       ]
     },
     {
@@ -19,7 +34,10 @@
       "bodyweight": 110.8,
       "tonnage": 5086,
       "exercises": [
-        { "name": "Circuits complets (2 séries)", "summary": "Progression charges +44%" }
+        {
+          "name": "Circuits complets (2 séries)",
+          "summary": "Progression charges +44%"
+        }
       ]
     },
     {
@@ -28,7 +46,10 @@
       "bodyweight": 110.4,
       "tonnage": 5010,
       "exercises": [
-        { "name": "Circuits complets (2 séries)", "summary": "Consolidation technique" }
+        {
+          "name": "Circuits complets (2 séries)",
+          "summary": "Consolidation technique"
+        }
       ]
     },
     {
@@ -37,9 +58,18 @@
       "bodyweight": 110.1,
       "tonnage": 7410,
       "exercises": [
-        { "name": "Pec Papillon (Pec Deck)", "summary": "12 @ 45kg, 12 @ 40kg" },
-        { "name": "Tirage vertical & Rowing", "summary": "Montée jusqu'à 50 kg" },
-        { "name": "Jambes & Bras (3 séries)", "summary": "Volume record 7'410 kg" }
+        {
+          "name": "Pec Papillon (Pec Deck)",
+          "summary": "12 @ 45kg, 12 @ 40kg"
+        },
+        {
+          "name": "Tirage vertical & Rowing",
+          "summary": "Montée jusqu'à 50 kg"
+        },
+        {
+          "name": "Jambes & Bras (3 séries)",
+          "summary": "Volume record 7'410 kg"
+        }
       ]
     },
     {
@@ -48,10 +78,22 @@
       "bodyweight": 110.1,
       "tonnage": 3980,
       "exercises": [
-        { "name": "Pec Papillon (Pec Deck)", "summary": "12 @ 45kg, 12 @ 40kg" },
-        { "name": "Développé poitrine assis", "summary": "12 @ 45kg, 10 @ 45kg" },
-        { "name": "Développé militaire haltères", "summary": "2 × 12 @ 8kg" },
-        { "name": "Développé Triceps & Dips assistés", "summary": "30kg & 40kg réels" }
+        {
+          "name": "Pec Papillon (Pec Deck)",
+          "summary": "12 @ 45kg, 12 @ 40kg"
+        },
+        {
+          "name": "Développé poitrine assis",
+          "summary": "12 @ 45kg, 10 @ 45kg"
+        },
+        {
+          "name": "Développé militaire haltères",
+          "summary": "2 × 12 @ 8kg"
+        },
+        {
+          "name": "Développé Triceps & Dips assistés",
+          "summary": "30kg & 40kg réels"
+        }
       ]
     },
     {
@@ -61,15 +103,77 @@
       "tonnage": 4554,
       "note": "Échec atteint sur 3e série Curl incliné et Curl marteau.",
       "exercises": [
-        { "name": "Vélo d'appartement", "summary": "13 min @ 0kg" },
-        { "name": "Tirage vertical poitrine", "summary": "12 @ 45kg, 12 @ 45kg, 10 @ 45kg" },
-        { "name": "Rowing assis (Appui ventral)", "summary": "12 @ 45kg, 12 @ 45kg, 10 @ 45kg" },
-        { "name": "Shrugs assis haltères", "summary": "3 × 15 @ 12kg" },
-        { "name": "Curl incliné haltères (60°)", "summary": "12 @ 8kg, 10 @ 8kg, 10 @ 8kg" },
-        { "name": "Curl marteau haltères", "summary": "10 @ 8kg, 10 @ 8kg, 8 @ 8kg" },
-        { "name": "Curl poignets (Avant-bras)", "summary": "15 @ 5kg sup., 15 @ 5kg pro." },
-        { "name": "Inclinaisons latérales haltère", "summary": "12 @ 12kg, 15 @ 12kg" }
+        {
+          "name": "Vélo d'appartement",
+          "summary": "13 min @ 0kg"
+        },
+        {
+          "name": "Tirage vertical poitrine",
+          "summary": "12 @ 45kg, 12 @ 45kg, 10 @ 45kg"
+        },
+        {
+          "name": "Rowing assis (Appui ventral)",
+          "summary": "12 @ 45kg, 12 @ 45kg, 10 @ 45kg"
+        },
+        {
+          "name": "Shrugs assis haltères",
+          "summary": "3 × 15 @ 12kg"
+        },
+        {
+          "name": "Curl incliné haltères (60°)",
+          "summary": "12 @ 8kg, 10 @ 8kg, 10 @ 8kg"
+        },
+        {
+          "name": "Curl marteau haltères",
+          "summary": "10 @ 8kg, 10 @ 8kg, 8 @ 8kg"
+        },
+        {
+          "name": "Curl poignets (Avant-bras)",
+          "summary": "15 @ 5kg sup., 15 @ 5kg pro."
+        },
+        {
+          "name": "Inclinaisons latérales haltère",
+          "summary": "12 @ 12kg, 15 @ 12kg"
+        }
       ]
+    },
+    {
+      "id": 1794751167761,
+      "date": "15.11.2026",
+      "title": "Leg Day #1 (Jambes, Fessiers, Mollets - 3 Séries)",
+      "bodyweight": 109.5,
+      "tonnage": 10765,
+      "exercises": [
+        {
+          "name": "Vélo d'appartement (Échauffement)",
+          "summary": "15 min @ 0kg"
+        },
+        {
+          "name": "Planche sur les coudes (À frais)",
+          "summary": "35s, 35s, 30s"
+        },
+        {
+          "name": "Presse à cuisses assise (Leg Press)",
+          "summary": "12 @ 85kg, 12 @ 85kg, 20 @ 85kg"
+        },
+        {
+          "name": "Leg Extension assis",
+          "summary": "12 @ 40kg, 12 @ 40kg, 11 @ 40kg"
+        },
+        {
+          "name": "Leg Curl assis",
+          "summary": "15 @ 35kg, 15 @ 35kg, 15 @ 35kg"
+        },
+        {
+          "name": "Adducteurs assis machine",
+          "summary": "15 @ 40kg, 15 @ 40kg, 15 @ 40kg"
+        },
+        {
+          "name": "Extensions des mollets à la presse",
+          "summary": "15 @ 50kg, 15 @ 50kg, 15 @ 50kg"
+        }
+      ],
+      "note": "Durée : 1h 14m • 8/10"
     }
   ]
 }
