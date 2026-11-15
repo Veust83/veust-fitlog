@@ -87,20 +87,12 @@ function uiLoop(){
 }
 
 /* ===== Historique : historique.json + séances archivées sur l'appareil ===== */
-let REMOTE=[];
-const pdate=s=>{const[d,m,y]=String(s).split(".");return new Date(+y,m-1,+d).getTime()||0};
-function allHist(){
-  const keys=new Set(REMOTE.map(s=>s.date+"|"+s.title));
-  return [...REMOTE,...getHist().filter(s=>!keys.has(s.date+"|"+s.title))].sort((a,b)=>pdate(b.date)-pdate(a.date));
-}
+let HIST=getHist();
+const allHist=()=>[...HIST].reverse();
 async function loadRemoteHist(){
-  try{
-    const r=await fetch("historique.json?t="+Date.now());
-    if(!r.ok)return;
-    REMOTE=(await r.json()).sessions||[];
-    const ae=document.activeElement;
-    if(viewMode==="focus"&&!(ae&&ae.tagName==="INPUT"))render();
-  }catch(e){}
+  HIST=(await loadAllHist()).sessions;
+  const ae=document.activeElement;
+  if(viewMode==="focus"&&!popupOpen()&&!(ae&&ae.tagName==="INPUT"))render();
 }
 /* Rapprochement tolérant des noms d'exercices (« Curl incliné assis haltères (Banc 60°) » ~ « Curl incliné haltères (60°) ») */
 const STOP=new Set(["aux","avec","de","du","des","la","le","les","au","et","en","d","l"]);
@@ -543,12 +535,19 @@ function finish(){
   const durStr=sessStart?fmtSessionDur(Date.now()-sessStart):"";
   const userNote=(prompt("Une note pour cette séance ? (facultatif)")||"").trim();
   const fullNote=[durStr?`Durée : ${durStr}`:"",userNote].filter(Boolean).join(" • ");
-  addHist(sessionFromProg(prog,fullNote));
+  const sess=sessionFromProg(prog,fullNote);
+  addHist(sess);HIST.push(sess);
   prog.exercises.forEach(e=>e.sets.forEach(s=>{s.done=false;delete s.time}));
   clearSessionClock();
   save();viewMode="list";render();stopT();
-  const m=$("fm");
-  if(m){m.innerText="Séance enregistrée dans l'historique (onglet Stats).";m.style.display="block";setTimeout(()=>{m.style.display="none"},4000)}
+  const show=(txt,col)=>{const m=$("fm");if(m){m.innerText=txt;m.style.color=col||"#22c55e";m.style.display="block"}};
+  if(ghToken()){
+    show("Séance enregistrée. Envoi vers historique.json…","#94a3b8");
+    syncHist().then(r=>{
+      if(r.ok){if(r.sessions)HIST=r.sessions;show("Séance enregistrée dans historique.json ✅")}
+      else show("Séance gardée sur l'appareil, elle sera renvoyée plus tard. "+r.msg,"#fb923c");
+    });
+  }else show("Séance enregistrée sur l'appareil. Ajoute ta clé GitHub dans Coach pour l'envoyer dans historique.json.");
 }
 
 /* ===== Navigation par Swipe Gauche / Droite en mode Focus ===== */

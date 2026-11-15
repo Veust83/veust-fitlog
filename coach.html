@@ -37,6 +37,18 @@
   </div>
 
   <div class="card">
+    <h2 class="c-title-green">Synchronisation GitHub (historique.json)</h2>
+    <p class="hint">Colle ici ta clé d'accès GitHub (fine-grained token, dépôt veust-fitlog, permission Contents en lecture et écriture). Elle reste uniquement sur cet appareil. Chaque séance terminée est alors ajoutée automatiquement à historique.json.</p>
+    <input type="password" id="ghk" class="sel-in" placeholder="github_pat_..." autocomplete="off" autocapitalize="off" spellcheck="false" style="width:100%;background:#080c18;border:1px solid #1b2234;border-radius:.5rem;padding:.55rem;color:#f1f5f9;font-size:.8rem;font-family:ui-monospace,SFMono-Regular,Menlo,monospace">
+    <div class="act-row">
+      <button onclick="saveKey()" class="btn-sub btn-prog">Enregistrer et tester</button>
+      <button onclick="delKey()" class="btn-sub btn-clear">Supprimer la clé</button>
+    </div>
+    <button onclick="syncNow()" class="btn-sub">Synchroniser maintenant</button>
+    <p id="ghs" class="msg" style="display:block;color:#94a3b8"></p>
+  </div>
+
+  <div class="card">
     <button id="iosBtn" onclick="setIos()" class="btn-sub"></button>
     <p class="hint">OFF (conseillé) : tu restes sur la page, l'écran reste allumé pendant le chrono, bip + flash à la fin. ON : iOS bascule brièvement dans Raccourcis (inévitable), utile si tu verrouilles l'écran.</p>
   </div>
@@ -56,6 +68,32 @@ function copyIds(){
   try{navigator.clipboard.writeText(txt)}catch(e){}
   const f=$("cid");f.style.display="block";setTimeout(()=>f.style.display="none",3000);
 }
+
+/* ===== Clé GitHub ===== */
+function ghStatus(txt,col){const m=$("ghs");m.innerText=txt;m.style.color=col||"#94a3b8"}
+function showKey(){
+  const k=ghToken();
+  $("ghk").value="";
+  $("ghk").placeholder=k?"Clé enregistrée (…"+k.slice(-4)+")":"github_pat_...";
+  ghStatus(k?"Clé enregistrée sur cet appareil.":"Aucune clé : les séances restent sur cet appareil.");
+}
+async function syncNow(){
+  if(!ghToken()){ghStatus("Enregistre d'abord ta clé GitHub.","#fb923c");return}
+  ghStatus("Synchronisation en cours…");
+  const r=await syncHist();
+  if(r.ok)ghStatus(r.added?r.added+" séance"+(r.added>1?"s":"")+" ajoutée"+(r.added>1?"s":"")+" à historique.json ✅":"Tout est à jour : "+r.sessions.length+" séances dans historique.json ✅","#22c55e");
+  else ghStatus(r.msg,"#fb923c");
+}
+function saveKey(){
+  const v=$("ghk").value.trim();
+  if(!v){ghStatus("Colle ta clé dans la case avant d'enregistrer.","#fb923c");return}
+  lsSet(GK,v);showKey();syncNow();
+}
+function delKey(){
+  if(!ghToken()||!confirm("Supprimer la clé GitHub de cet appareil ?"))return;
+  lsDel(GK);showKey();
+}
+showKey();
 
 function hasProgress(){return getProg().exercises.some(e=>e.sets.some(s=>s.done))}
 function loadProg(k){

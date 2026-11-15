@@ -45,7 +45,7 @@
   <div id="view" style="display:flex;flex-direction:column;gap:.875rem"></div>
 
   <div class="card">
-    <p class="hint">Les séances terminées sur cet appareil sont ajoutées automatiquement à celles de historique.json. Pour tout garder dans le fichier, copie l'historique complet et colle-le dans historique.json.</p>
+    <p class="hint">Avec une clé GitHub enregistrée dans Coach, les séances de cet appareil sont envoyées automatiquement dans historique.json. Sans clé, tu peux copier l'historique complet et le coller toi-même dans le fichier.</p>
     <button onclick="copyHist()" class="btn-sub">Copier l'historique complet (JSON)</button>
     <p id="cf" class="msg" style="color:#22c55e">Historique copié !</p>
     <p id="err" class="msg" style="color:#fb923c"></p>
@@ -57,7 +57,6 @@
 mountShell("stats.html");
 
 /* ===== Données ===== */
-const pd=s=>{const[d,m,y]=String(s).split(".");return new Date(+y,m-1,+d)};
 const num=n=>(Math.round(n*10)/10).toLocaleString("fr-CH");
 const shortDate=s=>String(s).split(".").slice(0,2).join(".");
 let ALL=[],GROUPS=[],view="s",sMetric="tonnage",gIdx=0,eMetric="max",CUR=null;
@@ -213,16 +212,17 @@ function setGroup(i){gIdx=+i;render()}
 
 /* ===== Chargement ===== */
 async function loadStats(){
-  let remote=[];
-  try{
-    const r=await fetch("historique.json?t="+Date.now());
-    if(!r.ok)throw 0;
-    remote=(await r.json()).sessions||[];
-  }catch(e){
-    const m=$("err");m.innerText="historique.json introuvable : seules les séances enregistrées sur cet appareil sont affichées.";m.style.display="block";
-  }
-  const keys=new Set(remote.map(s=>s.date+"|"+s.title));
-  ALL=[...remote,...getHist().filter(s=>!keys.has(s.date+"|"+s.title))].sort((a,b)=>pd(a.date)-pd(b.date));
+  const r=await loadAllHist();
+  ALL=r.sessions;
+  const note=(txt,col)=>{const m=$("err");m.innerText=txt;m.style.color=col||"#fb923c";m.style.display=txt?"block":"none"};
+  if(!r.src)note("historique.json introuvable : seules les séances enregistrées sur cet appareil sont affichées.");
+  if(r.pending&&ghToken()){
+    note("Envoi de "+r.pending+" séance"+(r.pending>1?"s":"")+" vers historique.json…","#94a3b8");
+    syncHist().then(x=>{
+      if(x.ok){if(x.sessions){ALL=x.sessions;buildGroups()}note(x.added?x.added+" séance"+(x.added>1?"s":"")+" ajoutée"+(x.added>1?"s":"")+" à historique.json ✅":"","#22c55e")}
+      else note(x.msg);
+    });
+  }else if(r.pending)note(r.pending+" séance"+(r.pending>1?"s":"")+" seulement sur cet appareil. Ajoute ta clé GitHub dans Coach pour l'envoyer dans historique.json.");
   buildGroups();
 
   const tot=ALL.reduce((a,s)=>a+(s.tonnage||0),0);

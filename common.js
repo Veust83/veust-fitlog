@@ -65,6 +65,7 @@ const setBW=v=>lsSet(BWK,v);
 const fmtSet=s=>s.unit==="sec"?`${s.reps}s`:s.unit==="min"?`${s.reps} min @ ${s.weight}kg`:`${s.reps} @ ${s.weight}kg`;
 function sessionFromProg(p,note){
   const s={
+    id:Date.now(),
     date:new Date().toLocaleDateString("fr-CH"),
     title:p.title,
     bodyweight:parseFloat(getBW())||undefined,
@@ -84,6 +85,78 @@ function mdFromProg(p){
 }
 function getHist(){try{return JSON.parse(lsGet(HK,"[]"))||[]}catch(e){return[]}}
 function addHist(s){const h=getHist();h.push(s);lsSet(HK,JSON.stringify(h))}
+
+/* ===== Synchronisation de l'historique avec historique.json sur GitHub =====
+   La clé d'accès (fine-grained token, permission Contents en lecture/écriture sur ce seul dépôt)
+   est enregistrée uniquement sur l'appareil. Elle ne doit JAMAIS être écrite dans un fichier du dépôt. */
+const GH={owner:"Veust83",repo:"veust-fitlog",branch:"main",path:"historique.json"},GK="veust_gh_token";
+const ghToken=()=>lsGet(GK,"").trim();
+const pDate=s=>{const[d,m,y]=String(s).split(".");return new Date(+y,m-1,+d).getTime()||0};
+/* Fusionne le fichier et les séances de l'appareil, sans doublon, de la plus ancienne à la plus récente.
+   Deux séances avec un identifiant sont comparées par identifiant ; sinon par date + titre. */
+function mergeHist(remote,local){
+  const dt=s=>s.date+"|"+s.title,ids=new Set(),noId=new Set(),all=new Set();
+  const note=s=>{all.add(dt(s));if(s.id)ids.add(s.id);else noId.add(dt(s))};
+  remote.forEach(note);
+  const added=[];
+  local.forEach(s=>{
+    const dup=s.id?ids.has(s.id)||noId.has(dt(s)):all.has(dt(s));
+    if(!dup){added.push(s);note(s)}
+  });
+  return{all:[...remote,...added].sort((a,b)=>pDate(a.date)-pDate(b.date)||(a.id||0)-(b.id||0)),added};
+}
+function b64enc(str){const b=new TextEncoder().encode(str);let s="";for(let i=0;i<b.length;i+=8192)s+=String.fromCharCode.apply(null,b.subarray(i,i+8192));return btoa(s)}
+function b64dec(b){const s=atob(String(b||"").replace(/\s/g,"")),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return new TextDecoder().decode(u)}
+async function ghApi(method,body){
+  const url=`https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${GH.path}`+(method==="GET"?"?ref="+GH.branch:"");
+  const r=await fetch(url,{method,cache:"no-store",headers:{Accept:"application/vnd.github+json",Authorization:"Bearer "+ghToken()},body:body?JSON.stringify(body):undefined});
+  if(!r.ok){const e=new Error("HTTP "+r.status);e.status=r.status;throw e}
+  return r.json();
+}
+function ghErr(e){
+  const s=e&&e.status;
+  if(e&&e.bad)return"historique.json est illisible sur GitHub : rien n'a été modifié.";
+  if(s===401)return"Clé GitHub refusée ou expirée.";
+  if(s===403||s===404)return"La clé n'a pas accès au dépôt (vérifie le dépôt choisi et la permission Contents).";
+  if(s===409||s===422)return"Conflit d'écriture sur GitHub, réessaie.";
+  return"Pas de connexion à GitHub.";
+}
+async function ghRead(){
+  const j=await ghApi("GET");let d;
+  try{d=JSON.parse(b64dec(j.content))}catch(e){const x=new Error("json");x.bad=true;throw x}
+  if(!d||!Array.isArray(d.sessions)){const x=new Error("json");x.bad=true;throw x}
+  return{sessions:d.sessions,sha:j.sha};
+}
+/* Envoie dans historique.json les séances de l'appareil qui n'y sont pas encore */
+let syncing=null;
+function syncHist(){
+  if(!ghToken())return Promise.resolve({ok:false,noToken:true,msg:"Aucune clé GitHub enregistrée (page Coach)."});
+  if(syncing)return syncing;
+  syncing=(async()=>{
+    try{
+      for(let k=0;;k++){
+        const r=await ghRead(),m=mergeHist(r.sessions,getHist());
+        if(!m.added.length)return{ok:true,added:0,sessions:m.all};
+        const last=m.added[m.added.length-1];
+        const message=m.added.length===1?`Séance du ${last.date} — ${last.title}`:`Synchronisation de ${m.added.length} séances`;
+        try{
+          await ghApi("PUT",{message,content:b64enc(JSON.stringify({sessions:m.all},null,2)+"\n"),sha:r.sha,branch:GH.branch});
+          return{ok:true,added:m.added.length,sessions:m.all};
+        }catch(e){if(e.status!==409||k)throw e}
+      }
+    }catch(e){return{ok:false,msg:ghErr(e)}}
+  })();
+  syncing.then(()=>{syncing=null});
+  return syncing;
+}
+/* Historique complet : GitHub en direct si une clé est enregistrée, sinon le fichier publié, plus l'appareil */
+async function loadAllHist(){
+  let remote=null,src="";
+  if(ghToken()){try{remote=(await ghRead()).sessions;src="github"}catch(e){}}
+  if(!remote){try{const r=await fetch("historique.json?t="+Date.now());if(r.ok){remote=(await r.json()).sessions||[];src="file"}}catch(e){}}
+  const m=mergeHist(remote||[],getHist());
+  return{sessions:m.all,pending:m.added.length,src};
+}
 
 /* ===== Chrono partagé : persistant entre les pages, écran maintenu allumé ===== */
 let ti=null,tEnd=0,tLabel="Repos",tCb=null,ac=null,wl=null;
