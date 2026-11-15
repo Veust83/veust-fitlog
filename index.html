@@ -99,7 +99,7 @@ function frame(ms){
     const ha=f.q("ha");ha.setAttribute("cx",o.a[0]);ha.setAttribute("cy",o.a[1]);
     f.hl.forEach((el,i)=>{const m=f.d.hl[i];if(!m){el.style.display="none";return}el.style.display="";const[a,b]=G[m[0]];L(el,lerp(a,b,m[1]),lerp(a,b,m[2]))});
   });
-  updateFocusRing();
+  updateFocusRings();
   requestAnimationFrame(frame);
 }
 
@@ -214,6 +214,7 @@ function renderFocus(){
   const nextIdx=ex.sets.findIndex(s=>!s.done);
   const activeIdx=nextIdx>=0?nextIdx:tot-1;
   const curSet=ex.sets[activeIdx]||{weight:0,reps:12,unit:"reps"};
+  const isTimed=(curSet.unit==="sec"||curSet.unit==="min");
   const R=36, C_LEN=2*Math.PI*R;
   const setDash=C_LEN*(1-(tot?dn/tot:0));
 
@@ -262,14 +263,15 @@ function renderFocus(){
 
     <div class="rings-grid">
       <div class="ring-col">
-        <div class="ring-box">
+        <div class="ring-box" ${isTimed?`onclick="toggleFocusExTimer(${curIdx},${activeIdx})" style="cursor:pointer" title="Toucher pour lancer ou arrêter le chrono de l'exercice"`:""}>
           <svg width="86" height="86" viewBox="0 0 86 86">
-            <circle cx="43" cy="43" r="${R}" stroke="#11343b" stroke-width="5" fill="none"/>
-            <circle cx="43" cy="43" r="${R}" stroke="#14b8a6" stroke-width="5" fill="none" stroke-linecap="round"/>
+            <circle cx="43" cy="43" r="${R}" stroke="${isTimed?'#3d220d':'#11343b'}" stroke-width="5" fill="none"/>
+            <circle id="focus-ex-arc" cx="43" cy="43" r="${R}" stroke="${isTimed?'#fb923c':'#14b8a6'}" stroke-width="5" fill="none" stroke-linecap="round"
+              stroke-dasharray="${C_LEN.toFixed(1)}" stroke-dashoffset="0" transform="rotate(-90 43 43)"/>
           </svg>
-          <span class="ring-big-txt">${curSet.reps}${curSet.unit==="sec"?"s":curSet.unit==="min"?"m":""}</span>
+          <span class="ring-big-txt" id="focus-ex-txt" style="font-size:${isTimed?'.95rem':'1.1rem'};font-family:${isTimed?'ui-monospace,SFMono-Regular,Menlo,monospace':'inherit'}">${isTimed?`▶ ${curSet.reps}${curSet.unit==='min'?'m':'s'}`:curSet.reps}</span>
         </div>
-        <span class="ring-cap">Répétitions<br>requises</span>
+        <span class="ring-cap">${isTimed?"Chrono<br>(toucher = ▶)":"Répétitions<br>requises"}</span>
       </div>
 
       <div class="ring-col">
@@ -306,7 +308,6 @@ function renderFocus(){
         <input type="number" id="f-r" value="${curSet.reps}" class="f-inp">
         <span>${curSet.unit==="sec"?"Secondes":curSet.unit==="min"?"Minutes":"Répétitions"}</span>
       </div>
-      ${curSet.unit==="sec"?`<button onclick="focusExTimer(${curIdx},${activeIdx})" class="btn-plus" style="background:#fb923c" title="Lancer le chrono exercice">⏱</button>`:""}
       <button onclick="addFocusSet(${curIdx},${activeIdx})" class="btn-plus" title="Valider la série">+</button>
     </div>
 
@@ -314,35 +315,81 @@ function renderFocus(){
       <span style="font-size:.8rem;font-weight:600;color:#64748b">Historique des séries</span>
       <a href="stats.html" style="font-size:.8rem;color:#14b8a6;text-decoration:none;font-weight:600">Graphique ›</a>
     </div>
-    ${todayHtml || '<p class="hint" style="text-align:center;padding:.5rem 0">Appuie sur <strong>+</strong> pour valider ta série #'+(activeIdx+1)+' (ou glisse ⇄ pour changer d\'exercice).</p>'}
+    ${todayHtml || '<p class="hint" style="text-align:center;padding:.5rem 0">'+(isTimed?'Touche <strong>▶</strong> dans le cercle orange pour lancer le chrono (ou <strong>+</strong> pour valider directement).':'Appuie sur <strong>+</strong> pour valider ta série #'+(activeIdx+1)+'.')+'</p>'}
     ${pastHtml}
   `;
 }
 
-function toggleFocusRest(i){
-  if(tEnd>Date.now()) stopT();
-  else timer(rest(prog.exercises[i])||90,"Repos",true);
-  updateFocusRing();
+function getExTargetSec(ex, setIdx){
+  const s=ex.sets[setIdx]||ex.sets[0]||{reps:30,unit:"sec"};
+  const val=parseInt($("f-r")?.value)||s.reps||30;
+  return s.unit==="min"?val*60:val;
 }
 
-function updateFocusRing(){
-  const arc=$("focus-rest-arc"), txt=$("focus-rest-txt");
-  if(!arc||!txt)return;
-  const R=36, C_LEN=2*Math.PI*R;
-  const maxS=rest(prog.exercises[curIdx])||90;
-
-  if(tEnd>Date.now()){
-    const rem=Math.max(0,Math.ceil((tEnd-Date.now())/1000));
-    const ratio=Math.min(1,rem/maxS);
-    arc.style.strokeDashoffset=(C_LEN*(1-ratio)).toFixed(1);
-    arc.setAttribute("stroke","#22c55e");
-    txt.style.color="#22c55e";
-    txt.innerText=fmtSec(rem);
+function toggleFocusExTimer(i, setIdx){
+  if(tEnd>Date.now() && tLabel==="Exercice"){
+    stopT();
   }else{
-    arc.style.strokeDashoffset="0";
-    arc.setAttribute("stroke","#ef4444");
-    txt.style.color="#ffffff";
-    txt.innerText=maxS>0?fmtSec(maxS):"00:00";
+    const ex=prog.exercises[i];
+    const sec=getExTargetSec(ex,setIdx);
+    timer(sec,"Exercice",false,()=>{
+      addFocusSet(i,setIdx);
+    });
+  }
+  updateFocusRings();
+}
+
+function toggleFocusRest(i){
+  if(tEnd>Date.now() && tLabel==="Repos") stopT();
+  else timer(rest(prog.exercises[i])||90,"Repos",true);
+  updateFocusRings();
+}
+
+function updateFocusRings(){
+  const R=36, C_LEN=2*Math.PI*R;
+  const ex=prog.exercises[curIdx];
+  const nextIdx=ex.sets.findIndex(s=>!s.done);
+  const activeIdx=nextIdx>=0?nextIdx:ex.sets.length-1;
+  const curSet=ex.sets[activeIdx]||{reps:12,unit:"reps"};
+  const isTimed=(curSet.unit==="sec"||curSet.unit==="min");
+
+  // 1. Anneau de gauche (Exercice chronométré avec Play / Compte à rebours)
+  const exArc=$("focus-ex-arc"), exTxt=$("focus-ex-txt");
+  if(exArc && exTxt && isTimed){
+    const maxExSec=getExTargetSec(ex,activeIdx)||30;
+    if(tEnd>Date.now() && tLabel==="Exercice"){
+      const rem=Math.max(0,Math.ceil((tEnd-Date.now())/1000));
+      const ratio=Math.min(1,rem/maxExSec);
+      exArc.style.strokeDashoffset=(C_LEN*(1-ratio)).toFixed(1);
+      exArc.setAttribute("stroke","#fb923c");
+      exTxt.style.color="#fb923c";
+      exTxt.innerText=fmtSec(rem);
+    }else{
+      exArc.style.strokeDashoffset="0";
+      exArc.setAttribute("stroke","#fb923c");
+      exTxt.style.color="#ffffff";
+      const val=parseInt($("f-r")?.value)||curSet.reps;
+      exTxt.innerText=`▶ ${val}${curSet.unit==='min'?'m':'s'}`;
+    }
+  }
+
+  // 2. Anneau central (Repos)
+  const rArc=$("focus-rest-arc"), rTxt=$("focus-rest-txt");
+  if(rArc && rTxt){
+    const maxS=rest(ex)||90;
+    if(tEnd>Date.now() && tLabel==="Repos"){
+      const rem=Math.max(0,Math.ceil((tEnd-Date.now())/1000));
+      const ratio=Math.min(1,rem/maxS);
+      rArc.style.strokeDashoffset=(C_LEN*(1-ratio)).toFixed(1);
+      rArc.setAttribute("stroke","#22c55e");
+      rTxt.style.color="#22c55e";
+      rTxt.innerText=fmtSec(rem);
+    }else{
+      rArc.style.strokeDashoffset="0";
+      rArc.setAttribute("stroke","#ef4444");
+      rTxt.style.color="#ffffff";
+      rTxt.innerText=maxS>0?fmtSec(maxS):"00:00";
+    }
   }
 }
 
@@ -370,13 +417,6 @@ function addFocusSet(i,setIdx){
   }
   save();render();
   if(rest(ex)>0) timer(rest(ex),"Repos",true);
-}
-
-function focusExTimer(i,setIdx){
-  const r=parseInt($("f-r").value)||30;
-  timer(r,"Exercice",false,()=>{
-    addFocusSet(i,setIdx);
-  });
 }
 
 function uncheckSet(i,setIdx){
