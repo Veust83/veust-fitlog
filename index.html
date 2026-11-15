@@ -32,6 +32,7 @@
 <main id="app-main"></main>
 
 <script src="common.js"></script>
+<script src="animations.js"></script>
 <script>
 /* ===== Chrono global de la séance (expire après 12 h si on oublie de terminer) ===== */
 const SK="veust_session_start";
@@ -75,104 +76,14 @@ function updateSessionClock(){
   badge.innerText="⏱ "+fmtSessionDur(Date.now()-sessStart);
 }
 
-/* ===== Moteur d'animation SVG 3D =====
-   Corrections : définitions (dégradés/filtres) créées UNE seule fois, dégradés et filtres en
-   userSpaceOnUse (un trait parfaitement horizontal/vertical a une boîte de taille nulle et
-   disparaissait avec objectBoundingBox), filtres lourds uniquement sur la grande figure. */
-const D=Math.PI/180,C=Math.cos,Sn=Math.sin;
-const SEAT='<rect x="20" y="61" width="32" height="5" rx="2.5" fill="url(#gEq)"/><rect x="17" y="22" width="6" height="42" rx="3" fill="url(#gEq)"/>';
-const E={
-  bike:{k:-1,e:1,hl:[['thigh',0,1]],eq:'<circle cx="52" cy="68" r="9.5" stroke="url(#gEq)" stroke-width="2.5" fill="none"/><rect x="30" y="55" width="15" height="4" rx="2" fill="url(#gEq)"/><line x1="72" y1="38" x2="72" y2="68" stroke="url(#gEq)" stroke-width="3"/>',P:(p,t)=>({h:[40,52],s:[56,32],a:[72,40],f:[52+9*C(t*5),68+9*Sn(t*5)]})},
-  plank:{k:-1,e:1,hl:[['torso',.05,.65]],eq:'',P:p=>({h:[59,58+1.5*p],s:[35,56],a:[49,70],f:[95,73]})},
-  leg_ext:{k:-1,e:1,hl:[['thigh',0,1]],eq:SEAT,P:p=>{const g=D*90*(1-p);return{h:[35,57],s:[34,33],a:[48,52],f:[55+20*C(g),57+20*Sn(g)]}}},
-  leg_curl:{k:-1,e:1,hl:[['thigh',.1,1]],eq:SEAT,P:p=>{const g=D*(15+85*p);return{h:[35,57],s:[34,33],a:[48,52],f:[55+20*C(g),57+20*Sn(g)]}}},
-  chest_push:{k:-1,e:1,hl:[['torso',.5,.95],['uarm',0,.55]],eq:SEAT,P:p=>({h:[30,58],s:[32,34],a:[40+30*p,38],f:[48,80]})},
-  row_pull:{k:-1,e:1,hl:[['torso',.45,1]],eq:SEAT,P:p=>({h:[30,58],s:[32-3*p,34],a:[74-22*p,41],f:[48,80]})},
-  lat_pull:{k:-1,e:1,hl:[['uarm',0,1],['torso',.5,1]],eq:SEAT+'<rect x="36" y="52" width="16" height="3.5" rx="1.5" fill="url(#gEq)"/>',P:p=>({h:[38,60],s:[40,36],a:[52+4*p,12+18*p],f:[52,82]})},
-  shoulder:{k:-1,e:1,hl:[['uarm',0,.65],['torso',.75,1]],eq:SEAT,P:p=>({h:[30,58],s:[32,34],a:[44,30-22*p],f:[48,80]})},
-  shrug:{k:-1,e:-1,db:1,hl:[['torso',.75,1],['uarm',0,.4]],eq:SEAT,P:p=>{const q=Math.min(1,p*1.5),sy=34-6*q;return{h:[30,58],s:[32,sy],a:[34,sy+27],f:[48,80]}}},
-  curl:{k:-1,e:1,hl:[['uarm',0,1]],eq:SEAT+'<line x1="36" y1="40" x2="48" y2="54" stroke="url(#gEq)" stroke-width="5.5" stroke-linecap="round"/>',P:p=>{const g=D*(20-120*p);return{h:[30,60],s:[34,36],a:[43+14*C(g),47+14*Sn(g)],f:[48,82]}}},
-  incline_curl:{k:-1,e:1,db:1,hl:[['uarm',0,1],['farm',0,.4]],eq:'<line x1="28" y1="66" x2="10" y2="36" stroke="url(#gEq)" stroke-width="7" stroke-linecap="round"/><rect x="24" y="64" width="20" height="4.5" rx="2" fill="url(#gEq)"/>',P:p=>{const g=D*(85-155*p);return{h:[34,62],s:[22,41],a:[24+14*C(g),55+14*Sn(g)],f:[56,80]}}},
-  hammer:{k:-1,e:1,db:1,hl:[['uarm',0,1],['farm',0,.5]],eq:SEAT,P:p=>{const g=D*(88-150*p);return{h:[30,58],s:[32,34],a:[33+14*C(g),48+14*Sn(g)],f:[48,80]}}},
-  triceps:{k:-1,e:1,hl:[['uarm',0,1]],eq:'',P:p=>{const g=D*90*(1+p);return{h:[40,56],s:[60,40],a:[47+14*C(g),42+14*Sn(g)],f:[40,84]}}},
-  side_bend:{k:-1,e:-1,db:1,hl:[['torso',.05,.65]],eq:'',P:p=>{const a=D*(-3+27*p),sx=60+24*Sn(a),sy=40-24*C(a);return{h:[60,40],s:[sx,sy],a:[sx+5,sy+26],f:[60,79]}}},
-  bridge:{k:-1,e:-1,hl:[['thigh',0,.65],['torso',0,.25]],eq:'',P:p=>{const g=-28*D*p;return{h:[22+24*C(g),73+24*Sn(g)],s:[22,73],a:[46,75],f:[64,76]}}}
-};
-
-const SVG_DEFS=`<defs>
-  <linearGradient id="gBody" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="90">
-    <stop offset="0" stop-color="#e2e8f0"/><stop offset="1" stop-color="#475569"/>
-  </linearGradient>
-  <linearGradient id="gLimb" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="90">
-    <stop offset="0" stop-color="#e2e8f0"/><stop offset="1" stop-color="#64748b"/>
-  </linearGradient>
-  <linearGradient id="gEq" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="90">
-    <stop offset="0" stop-color="#64748b"/><stop offset="1" stop-color="#1e293b"/>
-  </linearGradient>
-  <linearGradient id="gMuscle" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="90">
-    <stop offset="0" stop-color="#fb923c"/><stop offset="1" stop-color="#dc2626"/>
-  </linearGradient>
-  <radialGradient id="gHead" cx="0.35" cy="0.3" r="0.65">
-    <stop offset="0" stop-color="#f8fafc"/><stop offset="0.55" stop-color="#94a3b8"/><stop offset="1" stop-color="#1e293b"/>
-  </radialGradient>
-  <filter id="glow3d" filterUnits="userSpaceOnUse" x="0" y="0" width="120" height="90">
-    <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="b"/>
-    <feOffset in="b" dy="2" result="o"/>
-    <feComponentTransfer in="o" result="s"><feFuncA type="linear" slope="0.7"/></feComponentTransfer>
-    <feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge>
-  </filter>
-  <filter id="mGlow" filterUnits="userSpaceOnUse" x="0" y="0" width="120" height="90">
-    <feGaussianBlur stdDeviation="2.2" result="b"/>
-    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-  </filter>
-</defs>`;
-document.body.insertAdjacentHTML("afterbegin",`<svg width="0" height="0" style="position:absolute" aria-hidden="true">${SVG_DEFS}</svg>`);
-
-function ik(a,b,l1,l2,k){
-  const dx=b[0]-a[0],dy=b[1]-a[1],d=Math.min(Math.hypot(dx,dy),l1+l2-.01)||.01,ux=dx/d,uy=dy/d;
-  const x=(l1*l1-l2*l2+d*d)/(2*d),h=Math.sqrt(Math.max(0,l1*l1-x*x));
-  return[a[0]+ux*x-uy*h*k,a[1]+uy*x+ux*h*k];
-}
-function figSVG(type, big=false){
-  const d=E[type]||E.chest_push;
-  const fG=big?' filter="url(#glow3d)"':'', fM=big?' filter="url(#mGlow)"':'';
-  return `<svg viewBox="0 0 120 90" class="${big?'fig-big':'fig-thumb'}" data-t="${E[type]?type:'chest_push'}">
-  <ellipse cx="60" cy="81" rx="44" ry="3.5" fill="rgba(0,0,0,0.6)"/>
-  <line x1="8" y1="79" x2="112" y2="79" stroke="#1e293b" stroke-width="1.5"/>${d.eq}
-  <g stroke-linecap="round" fill="none"${fG}>
-    <line class="th" stroke="url(#gLimb)" stroke-width="8.5"/>
-    <line class="sh" stroke="url(#gLimb)" stroke-width="6.5"/>
-    <line class="to" stroke="url(#gBody)" stroke-width="11"/>
-    <line class="hl" stroke="url(#gMuscle)" stroke-width="11.5"${fM}/>
-    <line class="hl" stroke="url(#gMuscle)" stroke-width="10.5"${fM}/>
-    <line class="ua" stroke="url(#gLimb)" stroke-width="6"/>
-    <line class="fa" stroke="url(#gLimb)" stroke-width="5"/>
-  </g>
-  <circle class="jt-k" r="3.2" fill="#334155"/><circle class="jt-e" r="2.6" fill="#475569"/>
-  <circle class="hd" r="7.2" fill="url(#gHead)"${fG}/>
-  <circle class="ha" r="${d.db?4.8:3.2}" fill="${d.db?'#f59e0b':'#14b8a6'}"${fG}/></svg>`;
-}
-let figs=[];
-function collect(){figs=[...document.querySelectorAll("svg[data-t]")].map(s=>({s,d:E[s.dataset.t],q:c=>s.querySelector("."+c),hl:s.querySelectorAll(".hl")}))}
-function L(el,a,b){el.setAttribute("x1",a[0]);el.setAttribute("y1",a[1]);el.setAttribute("x2",b[0]);el.setAttribute("y2",b[1])}
-const lerp=(a,b,f)=>[a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f];
-function frame(ms){
-  const t=ms/1000,p=.5-.5*C(t*2.1);
-  figs.forEach(f=>{
-    const o=f.d.P(p,t),K=ik(o.h,o.f,20,20,f.d.k),El=ik(o.s,o.a,14,14,f.d.e);
-    const G={torso:[o.h,o.s],thigh:[o.h,K],shin:[K,o.f],uarm:[o.s,El],farm:[El,o.a]};
-    L(f.q("to"),...G.torso);L(f.q("th"),...G.thigh);L(f.q("sh"),...G.shin);L(f.q("ua"),...G.uarm);L(f.q("fa"),...G.farm);
-    const jk=f.q("jt-k");if(jk){jk.setAttribute("cx",K[0]);jk.setAttribute("cy",K[1])}
-    const je=f.q("jt-e");if(je){je.setAttribute("cx",El[0]);je.setAttribute("cy",El[1])}
-    const vx=o.s[0]-o.h[0],vy=o.s[1]-o.h[1],n=Math.hypot(vx,vy)||1,hd=f.q("hd");
-    hd.setAttribute("cx",o.s[0]+vx/n*9.5);hd.setAttribute("cy",o.s[1]+vy/n*9.5);
-    const ha=f.q("ha");ha.setAttribute("cx",o.a[0]);ha.setAttribute("cy",o.a[1]);
-    f.hl.forEach((el,i)=>{const m=f.d.hl[i];if(!m){el.style.display="none";return}el.style.display="";const[a,b]=G[m[0]];L(el,lerp(a,b,m[1]),lerp(a,b,m[2]))});
-  });
+/* ===== Animations : moteur externe (animations.js) ===== */
+const animOf=ex=>Anim.resolve(ex.name,ex.animType,ex.muscle,ex.equipment);
+const figSVG=(ex,big=false)=>Anim.svg(animOf(ex),big);
+function uiLoop(){
   updateFocusRings();
   updateSessionClock();
   updatePopup();
-  requestAnimationFrame(frame);
+  requestAnimationFrame(uiLoop);
 }
 
 /* ===== Historique : historique.json + séances archivées sur l'appareil ===== */
@@ -261,7 +172,7 @@ function resetProgress(){
 function render(){
   if(viewMode==="list") renderList();
   else renderFocus();
-  collect();refreshHeader();updateSessionClock();
+  refreshHeader();updateSessionClock();
 }
 
 function renderList(){
@@ -275,7 +186,7 @@ function renderList(){
     const dn=ex.sets.filter(s=>s.done).length, tot=ex.sets.length;
     const epct=tot?Math.round(dn/tot*100):0;
     return `<div class="ex-list-item" onclick="openFocus(${i})">
-      ${figSVG(ex.animType,false)}
+      ${figSVG(ex,false)}
       <div class="ex-list-info">
         <h3>${esc(ex.name)}</h3>
         <p class="ex-list-sub">${esc(fmtExSummary(ex))}</p>
@@ -366,7 +277,7 @@ function renderFocus(){
     </div>
 
     <div class="focus-stage">
-      ${figSVG(ex.animType,true)}
+      ${figSVG(ex,true)}
     </div>
 
     <div style="margin-top:.25rem">
@@ -580,7 +491,7 @@ function addFocusSet(i,w,r,auto){
 const popupOpen=()=>!!$("pop-ov");
 function closePopup(){
   const el=$("pop-ov");
-  if(el){el.remove();collect()}
+  if(el)el.remove();
 }
 function showDonePopup(i){
   closePopup();
@@ -591,7 +502,7 @@ function showDonePopup(i){
       <div class="pop-title">Exercice terminé !</div>
       <div class="pop-sub">${esc(ex.name)} • ${n} série${n>1?"s":""}</div>
       <div class="pop-next">
-        ${figSVG(next.animType,false)}
+        ${figSVG(next,false)}
         <div style="min-width:0">
           <div class="pop-lbl">À suivre</div>
           <div class="pop-name">${esc(next.name)}</div>
@@ -610,7 +521,6 @@ function showDonePopup(i){
       <button class="pop-btn2" onclick="closePopup()">Plus tard</button>`;
   }
   document.body.insertAdjacentHTML("beforeend",`<div class="pop-ov" id="pop-ov" onclick="if(event.target===this)closePopup()"><div class="pop-card">${body}</div></div>`);
-  collect();
   updatePopup();
 }
 function updatePopup(){
@@ -664,7 +574,7 @@ document.addEventListener("touchend",e=>{
 mountShell("index.html");
 render();
 loadRemoteHist();
-requestAnimationFrame(frame);
+requestAnimationFrame(uiLoop);
 </script>
 </body>
 </html>
