@@ -4,9 +4,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Veust FitLog</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="favicon.png">
+<meta name="theme-color" content="#050811">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FitLog">
 <link rel="stylesheet" href="style.css">
 <style>
   html,body{background:#050811;color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+
+  .perf-box{background:#0b1120;border:1px solid #1b2234;border-left:3px solid #14b8a6;border-radius:.6rem;padding:.55rem .7rem;display:flex;flex-direction:column;gap:.25rem}
+  .perf-row{display:flex;justify-content:space-between;gap:.5rem;font-size:.78rem;align-items:baseline}
+  .perf-lbl{color:#94a3b8}
+  .perf-val{color:#e2e8f0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.75rem;text-align:right}
+  .perf-sug{color:#14b8a6;font-weight:800;font-size:.9rem;white-space:nowrap}
+  .perf-why{font-size:.7rem;color:#94a3b8}
 
   /* Pop-up « exercice terminé » */
   .pop-ov{position:fixed;inset:0;z-index:100;background:rgba(2,6,23,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center;padding:1rem;padding-bottom:calc(1rem + env(safe-area-inset-bottom,0px));animation:popFade .2s ease-out}
@@ -220,6 +235,53 @@ function renderList(){
     </div>`;
 }
 
+/* ===== Dernière performance + proposition de progression ===== */
+/* Lit un résumé : « 12 @ 45kg, 10 @ 45kg », « 3 × 15 @ 12kg », « 25s, 25s », « 10 min @ 0kg » */
+function parseSets(str){
+  const out=[];
+  String(str||"").split(/[,;]/).forEach(part=>{
+    const s=part.trim();let m;
+    if(m=s.match(/(?:(\d+)\s*[×x]\s*)?(\d+)\s*(?:reps?\s*)?@\s*(\d+(?:[.,]\d+)?)\s*kg/i)){
+      for(let i=0;i<(+m[1]||1);i++)out.push({reps:+m[2],weight:parseFloat(m[3].replace(",",".")),unit:"reps"});
+    }else if(m=s.match(/(?:(\d+)\s*[×x]\s*)?(\d+)\s*(min|sec|s)\b/i)){
+      for(let i=0;i<(+m[1]||1);i++)out.push({reps:+m[2],weight:0,unit:m[3].toLowerCase()==="min"?"min":"sec"});
+    }
+  });
+  return out;
+}
+function lastPerf(ex){
+  for(const h of allHist()){
+    const f=(h.exercises||[]).find(x=>sameEx(x.name,ex.name));
+    if(f){const sets=parseSets(f.summary);if(sets.length)return{date:h.date,sets}}
+  }
+  return null;
+}
+/* Proposition pour la série j : objectif atteint la dernière fois -> on monte, sinon on consolide */
+function suggest(ex,j){
+  const plan=ex.sets[j]||ex.sets[ex.sets.length-1]||{weight:0,reps:12,unit:"reps"};
+  const lp=lastPerf(ex);
+  if(!lp)return{weight:plan.weight,reps:plan.reps,why:"",lp:null};
+  const last=lp.sets[j]||lp.sets[lp.sets.length-1];
+  const timed=plan.unit==="sec"||plan.unit==="min";
+  if(timed||last.unit!=="reps"){
+    if(!timed||last.unit==="reps")return{weight:plan.weight,reps:plan.reps,why:"",lp};
+    const hit=last.reps>=plan.reps,step=plan.unit==="min"?1:5;
+    return hit?{weight:plan.weight,reps:Math.max(plan.reps,last.reps+step),why:`Tenu ${last.reps}${plan.unit==="min"?" min":" s"} la dernière fois → +${step}${plan.unit==="min"?" min":" s"}`,lp}
+              :{weight:plan.weight,reps:plan.reps,why:`${last.reps}${plan.unit==="min"?" min":" s"} la dernière fois → vise l'objectif`,lp};
+  }
+  const step=last.weight>=20?2.5:1;
+  /* On ne monte que si TOUTES les séries de la dernière fois ont atteint leur objectif */
+  const rs=lp.sets.filter(x=>x.unit==="reps");
+  const hit=last.weight>0&&rs.every((x,k)=>x.reps>=(ex.sets[k]||plan).reps);
+  if(hit){
+    const w=Math.max(plan.weight,last.weight+step);
+    return{weight:w,reps:plan.reps,why:w>last.weight?`Toutes les séries réussies la dernière fois → +${num1(w-last.weight)} kg`:`Objectif atteint → garde la charge du programme`,lp};
+  }
+  const w=Math.max(plan.weight,last.weight);
+  return{weight:w,reps:plan.reps,why:`Pas toutes les séries réussies la dernière fois → même charge, vise ${plan.reps} reps`,lp};
+}
+const num1=n=>(Math.round(n*10)/10).toLocaleString("fr-CH");
+
 function renderFocus(){
   const ex=prog.exercises[curIdx];
   const tot=ex.sets.length, dn=ex.sets.filter(s=>s.done).length;
@@ -229,6 +291,12 @@ function renderFocus(){
   const isTimed=(curSet.unit==="sec"||curSet.unit==="min");
   const two=isTwoSided(ex);
   const R=36, C_LEN=2*Math.PI*R;
+  const sug=nextIdx>=0?suggest(ex,activeIdx):{weight:curSet.weight,reps:curSet.reps,why:"",lp:null};
+  const lpTxt=sug.lp?sug.lp.sets.map(x=>x.unit==="reps"?`${x.reps}×${num1(x.weight)}`:`${x.reps}${x.unit==="min"?" min":" s"}`).join(" · "):"";
+  const perfHtml=sug.lp?`<div class="perf-box">
+      <div class="perf-row"><span class="perf-lbl">Dernière fois (${esc(sug.lp.date)})</span><span class="perf-val">${esc(lpTxt)}${sug.lp.sets.some(x=>x.unit==="reps")?" kg":""}</span></div>
+      ${sug.why?`<div class="perf-row"><span class="perf-lbl">Proposé série #${activeIdx+1}</span><span class="perf-sug">${isTimed?`${sug.reps}${curSet.unit==="min"?" min":" s"}`:`${sug.reps} × ${num1(sug.weight)} kg`}</span></div><div class="perf-why">${esc(sug.why)}</div>`:""}
+    </div>`:`<div class="perf-box"><div class="perf-why">Première fois sur cet exercice : pars sur le programme.</div></div>`;
   const setDash=C_LEN*(1-(tot?dn/tot:0));
   const allDone=tot>0&&dn>=tot;
 
@@ -279,6 +347,7 @@ function renderFocus(){
       </p>
       ${ex.note?`<p class="focus-note">${esc(ex.note)}</p>`:""}
     </div>
+    ${nextIdx>=0?perfHtml:""}
 
     <div class="rings-grid">
       <div class="ring-col">
@@ -320,11 +389,11 @@ function renderFocus(){
 
     <div class="focus-input-bar">
       <div class="f-inp-box">
-        <input type="number" step="0.5" id="f-w" value="${curSet.weight}" class="f-inp">
+        <input type="number" step="0.5" id="f-w" value="${sug.weight}" class="f-inp">
         <span>Kilogrammes</span>
       </div>
       <div class="f-inp-box">
-        <input type="number" id="f-r" value="${curSet.reps}" class="f-inp">
+        <input type="number" id="f-r" value="${sug.reps}" class="f-inp">
         <span>${curSet.unit==="sec"?"Secondes":curSet.unit==="min"?"Minutes":"Répétitions"}</span>
       </div>
       <button onclick="addFocusSet(${curIdx})" class="btn-plus" title="Valider la série">+</button>

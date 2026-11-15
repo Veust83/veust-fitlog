@@ -244,3 +244,8 @@ function mountShell(active){
   try{const t=JSON.parse(lsGet(TK,"null"));if(t&&t.tEnd>Date.now()){tEnd=t.tEnd;tLabel=t.label;run();lock()}}catch(e){}
   document.addEventListener("visibilitychange",()=>{if(!document.hidden){tick();if(tEnd)lock()}});
 }
+
+/* ===== Appli installable (écran d'accueil) + fonctionnement hors ligne ===== */
+if("serviceWorker" in navigator&&location.protocol==="https:"){
+  window.addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").catch(()=>{})});
+}
