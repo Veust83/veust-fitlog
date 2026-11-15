@@ -5,13 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Veust FitLog</title>
 <link rel="stylesheet" href="style.css">
+<style>
+  html,body{background:#050811;color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+</style>
 </head>
 <body>
 <main id="app-main"></main>
 
 <script src="common.js"></script>
 <script>
-/* ===== Moteur d'animation SVG 3D Volumétrique (Cinématique inverse 2 segments) ===== */
+/* ===== Moteur d'animation SVG 3D Volumétrique ===== */
 const D=Math.PI/180,C=Math.cos,Sn=Math.sin;
 const SEAT='<rect x="20" y="61" width="32" height="5" rx="2.5" fill="url(#gEq)"/><rect x="17" y="22" width="6" height="42" rx="3" fill="url(#gEq)"/>';
 const E={
@@ -105,6 +108,11 @@ let prog=getProg(), viewMode="list", curIdx=0;
 const rest=e=>e.restSec!==undefined?e.restSec:90;
 function save(){saveProg(prog)}
 
+function fmtSec(s){
+  const m=Math.floor(s/60), r=s%60;
+  return String(m).padStart(2,"0")+":"+String(r).padStart(2,"0");
+}
+
 function fmtExSummary(ex){
   const s=ex.sets||[];
   if(!s.length)return "";
@@ -147,7 +155,6 @@ function render(){
   collect();refreshHeader();
 }
 
-/* ===== 1. RENDU VUE LISTE (Style capture #2) ===== */
 function renderList(){
   const pct=getProgPct();
   const R=22, C_LEN=2*Math.PI*R, dash=C_LEN*(1-pct/100);
@@ -201,7 +208,6 @@ function renderList(){
     </div>`;
 }
 
-/* ===== 2. RENDU VUE FOCUS (Style capture #1) ===== */
 function renderFocus(){
   const ex=prog.exercises[curIdx];
   const tot=ex.sets.length, dn=ex.sets.filter(s=>s.done).length;
@@ -211,7 +217,6 @@ function renderFocus(){
   const R=36, C_LEN=2*Math.PI*R;
   const setDash=C_LEN*(1-(tot?dn/tot:0));
 
-  // Séries réalisées aujourd'hui (ordre décroissant comme sur l'app)
   const todaySets=ex.sets.map((s,idx)=>({...s,idx})).filter(s=>s.done).reverse();
   const todayHtml=todaySets.length?`
     <div class="hist-group">
@@ -223,7 +228,6 @@ function renderFocus(){
       </div>`).join("")}
     </div>`:"";
 
-  // Historique des séances précédentes pour cet exercice
   const pastSessions=getHist().filter(h=>(h.exercises||[]).some(x=>x.name.toLowerCase()===ex.name.toLowerCase())).reverse().slice(0,3);
   const pastHtml=pastSessions.map(h=>{
     const found=h.exercises.find(x=>x.name.toLowerCase()===ex.name.toLowerCase());
@@ -269,15 +273,15 @@ function renderFocus(){
       </div>
 
       <div class="ring-col">
-        <div class="ring-box" onclick="timer(${rest(ex)||90},'Repos',true)" style="cursor:pointer">
+        <div class="ring-box" onclick="toggleFocusRest(${curIdx})" style="cursor:pointer" title="Toucher pour lancer ou arrêter le repos">
           <svg width="86" height="86" viewBox="0 0 86 86">
             <circle cx="43" cy="43" r="${R}" stroke="#3b1219" stroke-width="5" fill="none"/>
-            <circle id="focus-rest-arc" cx="43" cy="43" r="${R}" stroke="#dc2626" stroke-width="5" fill="none" stroke-linecap="round"
+            <circle id="focus-rest-arc" cx="43" cy="43" r="${R}" stroke="#ef4444" stroke-width="5" fill="none" stroke-linecap="round"
               stroke-dasharray="${C_LEN.toFixed(1)}" stroke-dashoffset="0" transform="rotate(-90 43 43)"/>
           </svg>
-          <span class="ring-big-txt" id="focus-rest-txt" style="font-size:.95rem">🔒</span>
+          <span class="ring-big-txt" id="focus-rest-txt" style="font-size:1rem;font-family:ui-monospace,SFMono-Regular,Menlo,monospace">${fmtSec(rest(ex))}</span>
         </div>
-        <span class="ring-cap">Repos<br>(toucher = lancer)</span>
+        <span class="ring-cap">Repos<br>(start / stop)</span>
       </div>
 
       <div class="ring-col">
@@ -310,26 +314,35 @@ function renderFocus(){
       <span style="font-size:.8rem;font-weight:600;color:#64748b">Historique des séries</span>
       <a href="stats.html" style="font-size:.8rem;color:#14b8a6;text-decoration:none;font-weight:600">Graphique ›</a>
     </div>
-    ${todayHtml || '<p class="hint" style="text-align:center;padding:.5rem 0">Appuie sur <strong>+</strong> pour valider ta série #'+(activeIdx+1)+'.</p>'}
+    ${todayHtml || '<p class="hint" style="text-align:center;padding:.5rem 0">Appuie sur <strong>+</strong> pour valider ta série #'+(activeIdx+1)+' (ou glisse ⇄ pour changer d\'exercice).</p>'}
     ${pastHtml}
   `;
+}
+
+function toggleFocusRest(i){
+  if(tEnd>Date.now()) stopT();
+  else timer(rest(prog.exercises[i])||90,"Repos",true);
+  updateFocusRing();
 }
 
 function updateFocusRing(){
   const arc=$("focus-rest-arc"), txt=$("focus-rest-txt");
   if(!arc||!txt)return;
   const R=36, C_LEN=2*Math.PI*R;
+  const maxS=rest(prog.exercises[curIdx])||90;
+
   if(tEnd>Date.now()){
     const rem=Math.max(0,Math.ceil((tEnd-Date.now())/1000));
-    const maxS=rest(prog.exercises[curIdx])||90;
     const ratio=Math.min(1,rem/maxS);
     arc.style.strokeDashoffset=(C_LEN*(1-ratio)).toFixed(1);
     arc.setAttribute("stroke","#22c55e");
-    txt.innerText=String(Math.floor(rem/60)).padStart(2,"0")+":"+String(rem%60).padStart(2,"0");
+    txt.style.color="#22c55e";
+    txt.innerText=fmtSec(rem);
   }else{
     arc.style.strokeDashoffset="0";
-    arc.setAttribute("stroke","#dc2626");
-    txt.innerText="🔒";
+    arc.setAttribute("stroke","#ef4444");
+    txt.style.color="#ffffff";
+    txt.innerText=maxS>0?fmtSec(maxS):"00:00";
   }
 }
 
@@ -348,7 +361,6 @@ function addFocusSet(i,setIdx){
   const ex=prog.exercises[i];
   const w=parseFloat($("f-w").value)||0;
   const r=parseInt($("f-r").value)||0;
-  // Si toutes les séries étaient déjà cochées, on ajoute une série bonus
   let target=ex.sets[setIdx];
   if(ex.sets.every(s=>s.done)){
     target={weight:w,reps:r,unit:ex.sets[0]?.unit||"reps",done:true,time:nowHM()};
@@ -384,37 +396,29 @@ function finish(){
   if(m){m.innerText="Séance enregistrée dans l'historique (onglet Stats).";m.style.display="block";setTimeout(()=>m.style.display="none",4000)}
 }
 
+/* ===== Navigation par Swipe Gauche / Droite en mode Focus ===== */
+let sx=0, sy=0;
+document.addEventListener("touchstart",e=>{
+  if(viewMode!=="focus"||!e.touches[0])return;
+  sx=e.touches[0].clientX;
+  sy=e.touches[0].clientY;
+},{passive:true});
+
+document.addEventListener("touchend",e=>{
+  if(viewMode!=="focus"||!e.changedTouches[0])return;
+  const tag=(e.target&&e.target.tagName)||"";
+  if(tag==="INPUT"||tag==="TEXTAREA")return;
+  const dx=e.changedTouches[0].clientX-sx;
+  const dy=e.changedTouches[0].clientY-sy;
+  if(Math.abs(dx)>55 && Math.abs(dx)>Math.abs(dy)*1.5){
+    if(dx<0 && curIdx<prog.exercises.length-1) openFocus(curIdx+1);
+    else if(dx>0 && curIdx>0) openFocus(curIdx-1);
+  }
+},{passive:true});
+
 mountShell("index.html");
 render();
 requestAnimationFrame(frame);
-
-  /* ===== Navigation par Swipe Gauche / Droite en mode Focus ===== */
-let sx = 0, sy = 0;
-
-document.addEventListener("touchstart", e => {
-  if (viewMode !== "focus" || !e.touches[0]) return;
-  sx = e.touches[0].clientX;
-  sy = e.touches[0].clientY;
-}, { passive: true });
-
-document.addEventListener("touchend", e => {
-  if (viewMode !== "focus" || !e.changedTouches[0]) return;
-  const tag = (e.target && e.target.tagName) || "";
-  if (tag === "INPUT" || tag === "TEXTAREA") return;
-
-  const dx = e.changedTouches[0].clientX - sx;
-  const dy = e.changedTouches[0].clientY - sy;
-
-  // Déclenche uniquement si le swipe est franc (> 55px) et bien horizontal
-  if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-    if (dx < 0 && curIdx < prog.exercises.length - 1) {
-      openFocus(curIdx + 1); // Swipe vers la gauche -> Exercice suivant
-    } else if (dx > 0 && curIdx > 0) {
-      openFocus(curIdx - 1); // Swipe vers la droite -> Exercice précédent
-    }
-  }
-}, { passive: true });
-  
 </script>
 </body>
 </html>
