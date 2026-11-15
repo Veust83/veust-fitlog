@@ -23,7 +23,10 @@
 
   <div class="card">
     <h2 class="c-title-orange">2. Charger un programme JSON</h2>
-    <p class="hint">animType : bike, plank, leg_ext, leg_curl, chest_push, row_pull, lat_pull, shoulder, shrug, curl, incline_curl, hammer, triceps, side_bend, bridge. L'animation est aussi choisie d'après le nom de l'exercice.</p>
+    <p class="hint">L'animation est choisie automatiquement d'après le nom de l'exercice (et les champs facultatifs « equipment » et « muscle »). Pour l'imposer, mets l'un de ces identifiants dans « animType » :</p>
+    <p class="hint" id="animIds" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-word"></p>
+    <button onclick="copyIds()" class="btn-sub">Copier la liste des animations pour Gemini</button>
+    <p id="cid" class="msg" style="color:#22c55e">Liste copiée !</p>
     <div class="act-row">
       <button onclick="pasteJson()" class="btn-sub">📋 Coller</button>
       <button onclick="clearJson()" class="btn-sub btn-clear">🗑️ Effacer</button>
@@ -40,11 +43,19 @@
 </main>
 
 <script src="common.js"></script>
+<script src="animations.js"></script>
 <script>
 mountShell("coach.html");
 showIos();
 
 $("progs").innerHTML=Object.keys(PROGRAMS).map(k=>`<button onclick="loadProg('${k}')" class="btn-sub btn-prog">${esc(PROGRAMS[k].label)}</button>`).join("");
+
+$("animIds").innerText=Anim.ids().join(", ");
+function copyIds(){
+  const txt="Valeurs possibles pour animType dans le JSON Veust FitLog :\n"+Anim.ids().map(id=>"- "+id+" : "+Anim.label(id)+" ("+Anim.group(id)+")").join("\n");
+  try{navigator.clipboard.writeText(txt)}catch(e){}
+  const f=$("cid");f.style.display="block";setTimeout(()=>f.style.display="none",3000);
+}
 
 function hasProgress(){return getProg().exercises.some(e=>e.sets.some(s=>s.done))}
 function loadProg(k){
