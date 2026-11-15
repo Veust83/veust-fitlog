@@ -2,7 +2,7 @@
    Réseau d'abord : tu as toujours la dernière version mise sur GitHub quand tu as du réseau,
    et la dernière version enregistrée quand tu n'en as pas (salle de sport sans réseau).
    Les appels à l'API GitHub (autre domaine) ne passent jamais par ce cache. */
-const CACHE="veust-fitlog-v1";
+const CACHE="veust-fitlog-v3";
 const FILES=["./","index.html","coach.html","stats.html","common.js","animations.js","style.css",
   "historique.json","manifest.webmanifest","icon-180.png","icon-192.png","icon-512.png","favicon.png"];
 
