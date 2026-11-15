@@ -387,6 +387,34 @@ function finish(){
 mountShell("index.html");
 render();
 requestAnimationFrame(frame);
+
+  /* ===== Navigation par Swipe Gauche / Droite en mode Focus ===== */
+let sx = 0, sy = 0;
+
+document.addEventListener("touchstart", e => {
+  if (viewMode !== "focus" || !e.touches[0]) return;
+  sx = e.touches[0].clientX;
+  sy = e.touches[0].clientY;
+}, { passive: true });
+
+document.addEventListener("touchend", e => {
+  if (viewMode !== "focus" || !e.changedTouches[0]) return;
+  const tag = (e.target && e.target.tagName) || "";
+  if (tag === "INPUT" || tag === "TEXTAREA") return;
+
+  const dx = e.changedTouches[0].clientX - sx;
+  const dy = e.changedTouches[0].clientY - sy;
+
+  // Déclenche uniquement si le swipe est franc (> 55px) et bien horizontal
+  if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+    if (dx < 0 && curIdx < prog.exercises.length - 1) {
+      openFocus(curIdx + 1); // Swipe vers la gauche -> Exercice suivant
+    } else if (dx > 0 && curIdx > 0) {
+      openFocus(curIdx - 1); // Swipe vers la droite -> Exercice précédent
+    }
+  }
+}, { passive: true });
+  
 </script>
 </body>
 </html>
