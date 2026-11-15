@@ -105,6 +105,7 @@ function frame(ms){
 
 /* ===== État de navigation : Vue Liste ("list") vs Vue Focus ("focus") ===== */
 let prog=getProg(), viewMode="list", curIdx=0;
+let exPhaseMax=0, exPhaseTag="";
 const rest=e=>e.restSec!==undefined?e.restSec:90;
 function save(){saveProg(prog)}
 
@@ -113,13 +114,20 @@ function fmtSec(s){
   return String(m).padStart(2,"0")+":"+String(r).padStart(2,"0");
 }
 
+function isTwoSided(ex){
+  if(ex.bilateral) return true;
+  const txt=((ex.name||"")+" "+(ex.note||"")).toLowerCase();
+  return /c[oô]t[eé]|lat[eé]ral|unilat[eé]ral|bilat[eé]ral|2\s*parties/.test(txt);
+}
+
 function fmtExSummary(ex){
   const s=ex.sets||[];
   if(!s.length)return "";
+  const two=isTwoSided(ex);
   const u=s[0].unit==="sec"?"s":s[0].unit==="min"?" min":" kg";
   const same=s.every(x=>x.weight===s[0].weight&&x.reps===s[0].reps);
   if(same){
-    if(s[0].unit==="sec"||s[0].unit==="min") return `${s.length}x${s[0].reps}${u}`;
+    if(s[0].unit==="sec"||s[0].unit==="min") return `${s.length}x${s[0].reps}${u}${two?" / côté":""}`;
     return `${s.length}x${s[0].reps}x${s[0].weight} kg`;
   }
   return s.map(x=>`${x.reps}x${x.weight} kg`).join(" - ");
@@ -215,6 +223,7 @@ function renderFocus(){
   const activeIdx=nextIdx>=0?nextIdx:tot-1;
   const curSet=ex.sets[activeIdx]||{weight:0,reps:12,unit:"reps"};
   const isTimed=(curSet.unit==="sec"||curSet.unit==="min");
+  const two=isTwoSided(ex);
   const R=36, C_LEN=2*Math.PI*R;
   const setDash=C_LEN*(1-(tot?dn/tot:0));
 
@@ -224,7 +233,7 @@ function renderFocus(){
       <div class="hist-date">Aujourd'hui (${new Date().toLocaleDateString("fr-CH")})</div>
       ${todaySets.map(s=>`<div class="hist-row" onclick="uncheckSet(${curIdx},${s.idx})">
         <span class="hist-num">#${s.idx+1}</span>
-        <span class="hist-val">${s.unit==="sec"?`${s.reps} sec`:s.unit==="min"?`${s.reps} min`:`${s.weight} kg × ${s.reps} réps`}</span>
+        <span class="hist-val">${s.unit==="sec"?`${s.reps} sec${two?" ×2":""}`:s.unit==="min"?`${s.reps} min`:`${s.weight} kg × ${s.reps} réps`}</span>
         <span class="hist-time">${esc(s.time||"✓")} ✕</span>
       </div>`).join("")}
     </div>`:"";
@@ -269,9 +278,9 @@ function renderFocus(){
             <circle id="focus-ex-arc" cx="43" cy="43" r="${R}" stroke="${isTimed?'#fb923c':'#14b8a6'}" stroke-width="5" fill="none" stroke-linecap="round"
               stroke-dasharray="${C_LEN.toFixed(1)}" stroke-dashoffset="0" transform="rotate(-90 43 43)"/>
           </svg>
-          <span class="ring-big-txt" id="focus-ex-txt" style="font-size:${isTimed?'.95rem':'1.1rem'};font-family:${isTimed?'ui-monospace,SFMono-Regular,Menlo,monospace':'inherit'}">${isTimed?`▶ ${curSet.reps}${curSet.unit==='min'?'m':'s'}`:curSet.reps}</span>
+          <span class="ring-big-txt" id="focus-ex-txt" style="font-size:${isTimed?(two?'.8rem':'.95rem'):'1.1rem'};font-family:${isTimed?'ui-monospace,SFMono-Regular,Menlo,monospace':'inherit'}">${isTimed?`▶ ${curSet.reps}${curSet.unit==='min'?'m':'s'}${two?'×2':''}`:curSet.reps}</span>
         </div>
-        <span class="ring-cap">${isTimed?"Chrono<br>(toucher = ▶)":"Répétitions<br>requises"}</span>
+        <span class="ring-cap" id="focus-ex-cap">${isTimed?(two?"2 Côtés<br>(35s • 5s • 35s)":"Chrono<br>(toucher = ▶)"):"Répétitions<br>requises"}</span>
       </div>
 
       <div class="ring-col">
@@ -328,20 +337,44 @@ function getExTargetSec(ex, setIdx){
 
 function toggleFocusExTimer(i, setIdx){
   if(tEnd>Date.now() && tLabel==="Exercice"){
+    exPhaseMax=0; exPhaseTag="";
     stopT();
   }else{
     const ex=prog.exercises[i];
     const sec=getExTargetSec(ex,setIdx);
-    timer(sec,"Exercice",false,()=>{
-      addFocusSet(i,setIdx);
-    });
+    const two=isTwoSided(ex);
+
+    if(two){
+      // Séquence 2 parties : Côté 1 -> 5s changement -> Côté 2 -> Validation + Repos
+      exPhaseMax=sec; exPhaseTag="Côté 1/2";
+      timer(sec,"Exercice",false,()=>{
+        exPhaseMax=5; exPhaseTag="Changement !";
+        timer(5,"Exercice",false,()=>{
+          exPhaseMax=sec; exPhaseTag="Côté 2/2";
+          timer(sec,"Exercice",false,()=>{
+            exPhaseMax=0; exPhaseTag="";
+            addFocusSet(i,setIdx);
+          });
+        });
+      });
+    }else{
+      // Séquence simple 1 partie
+      exPhaseMax=sec; exPhaseTag="En cours";
+      timer(sec,"Exercice",false,()=>{
+        exPhaseMax=0; exPhaseTag="";
+        addFocusSet(i,setIdx);
+      });
+    }
   }
   updateFocusRings();
 }
 
 function toggleFocusRest(i){
   if(tEnd>Date.now() && tLabel==="Repos") stopT();
-  else timer(rest(prog.exercises[i])||90,"Repos",true);
+  else{
+    exPhaseMax=0; exPhaseTag="";
+    timer(rest(prog.exercises[i])||90,"Repos",true);
+  }
   updateFocusRings();
 }
 
@@ -352,24 +385,31 @@ function updateFocusRings(){
   const activeIdx=nextIdx>=0?nextIdx:ex.sets.length-1;
   const curSet=ex.sets[activeIdx]||{reps:12,unit:"reps"};
   const isTimed=(curSet.unit==="sec"||curSet.unit==="min");
+  const two=isTwoSided(ex);
 
-  // 1. Anneau de gauche (Exercice chronométré avec Play / Compte à rebours)
-  const exArc=$("focus-ex-arc"), exTxt=$("focus-ex-txt");
+  // 1. Anneau de gauche (Exercice chronométré avec Play / Côté 1 / 5s transition / Côté 2)
+  const exArc=$("focus-ex-arc"), exTxt=$("focus-ex-txt"), exCap=$("focus-ex-cap");
   if(exArc && exTxt && isTimed){
-    const maxExSec=getExTargetSec(ex,activeIdx)||30;
+    const maxExSec=exPhaseMax||getExTargetSec(ex,activeIdx)||30;
     if(tEnd>Date.now() && tLabel==="Exercice"){
       const rem=Math.max(0,Math.ceil((tEnd-Date.now())/1000));
       const ratio=Math.min(1,rem/maxExSec);
+      const isSwitch=(exPhaseTag==="Changement !");
+      const col=isSwitch?"#38bdf8":"#fb923c";
       exArc.style.strokeDashoffset=(C_LEN*(1-ratio)).toFixed(1);
-      exArc.setAttribute("stroke","#fb923c");
-      exTxt.style.color="#fb923c";
+      exArc.setAttribute("stroke",col);
+      exTxt.style.color=col;
+      exTxt.style.fontSize="1rem";
       exTxt.innerText=fmtSec(rem);
+      if(exCap) exCap.innerHTML=exPhaseTag||"Chrono";
     }else{
       exArc.style.strokeDashoffset="0";
       exArc.setAttribute("stroke","#fb923c");
       exTxt.style.color="#ffffff";
       const val=parseInt($("f-r")?.value)||curSet.reps;
-      exTxt.innerText=`▶ ${val}${curSet.unit==='min'?'m':'s'}`;
+      exTxt.style.fontSize=two?".8rem":".95rem";
+      exTxt.innerText=`▶ ${val}${curSet.unit==='min'?'m':'s'}${two?'×2':''}`;
+      if(exCap) exCap.innerHTML=two?`2 Côtés<br>(${val}s • 5s • ${val}s)`:"Chrono<br>(toucher = ▶)";
     }
   }
 
