@@ -7,6 +7,25 @@
 <link rel="stylesheet" href="style.css">
 <style>
   html,body{background:#050811;color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+
+  /* Pop-up « exercice terminé » */
+  .pop-ov{position:fixed;inset:0;z-index:100;background:rgba(2,6,23,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center;padding:1rem;padding-bottom:calc(1rem + env(safe-area-inset-bottom,0px));animation:popFade .2s ease-out}
+  .pop-card{width:100%;max-width:26rem;background:linear-gradient(180deg,#111a2e,#0b1120);border:1px solid #1e293b;border-radius:1.25rem;padding:1.25rem 1.1rem 1rem;box-shadow:0 20px 60px rgba(0,0,0,.6);text-align:center;animation:popUp .3s cubic-bezier(.2,.9,.3,1.2)}
+  @keyframes popFade{from{opacity:0}to{opacity:1}}
+  @keyframes popUp{from{transform:translateY(40px) scale(.96);opacity:0}to{transform:none;opacity:1}}
+  @keyframes popCheck{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
+  .pop-check{width:3.4rem;height:3.4rem;border-radius:50%;margin:0 auto .6rem;display:flex;align-items:center;justify-content:center;font-size:1.7rem;font-weight:700;background:rgba(20,184,166,.15);border:2px solid #14b8a6;color:#14b8a6;animation:popCheck .45s .1s both}
+  .pop-title{font-size:1.1rem;font-weight:700;color:#fff}
+  .pop-sub{font-size:.75rem;color:#94a3b8;margin-top:.2rem}
+  .pop-next{display:flex;align-items:center;gap:.7rem;background:#080c18;border:1px solid #1b2234;border-radius:.8rem;padding:.55rem;margin:.9rem 0 .6rem;text-align:left}
+  .pop-next .fig-thumb{width:6rem;height:4.5rem;flex-shrink:0}
+  .pop-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#14b8a6;font-weight:700}
+  .pop-name{font-size:.88rem;font-weight:700;color:#f1f5f9;line-height:1.2;margin-top:.1rem}
+  .pop-meta{font-size:.72rem;color:#94a3b8;margin-top:.15rem}
+  .pop-rest{font-size:.8rem;color:#94a3b8;margin-bottom:.75rem}
+  .pop-rest span{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:700;color:#22c55e}
+  .pop-btn{width:100%;padding:.85rem;border:none;border-radius:.75rem;font-weight:800;font-size:.85rem;letter-spacing:.03em;cursor:pointer;background:#14b8a6;color:#04201d}
+  .pop-btn2{width:100%;margin-top:.45rem;padding:.6rem;background:transparent;border:none;color:#94a3b8;font-size:.78rem;cursor:pointer}
 </style>
 </head>
 <body>
@@ -152,6 +171,7 @@ function frame(ms){
   });
   updateFocusRings();
   updateSessionClock();
+  updatePopup();
   requestAnimationFrame(frame);
 }
 
@@ -218,6 +238,7 @@ function getProgPct(){
 }
 
 function openFocus(idx){
+  closePopup();
   curIdx=Math.max(0,Math.min(prog.exercises.length-1,idx));
   viewMode="focus";
   render();
@@ -542,14 +563,62 @@ function addFocusSet(i,w,r,auto){
   if(w===undefined) w=useInputs?(parseFloat(fw.value)||0):ref.weight;
   if(r===undefined) r=useInputs?(parseInt(fr.value)||0):ref.reps;
   exPhaseMax=0; exPhaseTag="";
+  let justDone=false;
   if(idx>=0){
     const t=ex.sets[idx];
     t.weight=w;t.reps=r;t.done=true;t.time=nowHM();
+    justDone=ex.sets.every(s=>s.done); // dernière série de l'exercice
   }else{
     ex.sets.push({weight:w,reps:r,unit:ex.sets[0]?.unit||"reps",done:true,time:nowHM()});
   }
   save();render();
   if(rest(ex)>0) timer(rest(ex),"Repos",!auto);
+  if(justDone) showDonePopup(i);
+}
+
+/* ===== Pop-up « exercice terminé » ===== */
+const popupOpen=()=>!!$("pop-ov");
+function closePopup(){
+  const el=$("pop-ov");
+  if(el){el.remove();collect()}
+}
+function showDonePopup(i){
+  closePopup();
+  const ex=prog.exercises[i], next=prog.exercises[i+1], n=ex.sets.length;
+  let body;
+  if(next){
+    body=`<div class="pop-check">✓</div>
+      <div class="pop-title">Exercice terminé !</div>
+      <div class="pop-sub">${esc(ex.name)} • ${n} série${n>1?"s":""}</div>
+      <div class="pop-next">
+        ${figSVG(next.animType,false)}
+        <div style="min-width:0">
+          <div class="pop-lbl">À suivre</div>
+          <div class="pop-name">${esc(next.name)}</div>
+          <div class="pop-meta">${esc(fmtExSummary(next))}</div>
+        </div>
+      </div>
+      <div class="pop-rest" id="pop-rest-row">⏱ Repos : <span id="pop-rest">--:--</span></div>
+      <button class="pop-btn" onclick="openFocus(${i+1})">EXERCICE SUIVANT →</button>
+      <button class="pop-btn2" onclick="closePopup()">Rester sur cet exercice</button>`;
+  }else{
+    const dur=sessStart?" • "+fmtSessionDur(Date.now()-sessStart):"";
+    body=`<div class="pop-check">🎉</div>
+      <div class="pop-title">Dernier exercice terminé !</div>
+      <div class="pop-sub">Progression ${getProgPct()}% • ${calcVol(prog).toLocaleString("fr-CH")} kg${dur}</div>
+      <button class="pop-btn" style="margin-top:1rem" onclick="closePopup();finish()">TERMINER ET ARCHIVER ✅</button>
+      <button class="pop-btn2" onclick="closePopup()">Plus tard</button>`;
+  }
+  document.body.insertAdjacentHTML("beforeend",`<div class="pop-ov" id="pop-ov" onclick="if(event.target===this)closePopup()"><div class="pop-card">${body}</div></div>`);
+  collect();
+  updatePopup();
+}
+function updatePopup(){
+  const el=$("pop-rest");
+  if(!el)return;
+  const on=tEnd>Date.now()&&tLabel==="Repos";
+  $("pop-rest-row").style.display=on?"":"none";
+  if(on)el.innerText=fmtSec(Math.max(0,Math.ceil((tEnd-Date.now())/1000)));
 }
 
 function uncheckSet(i,setIdx){
@@ -581,7 +650,7 @@ document.addEventListener("touchstart",e=>{
 },{passive:true});
 
 document.addEventListener("touchend",e=>{
-  if(viewMode!=="focus"||!e.changedTouches[0])return;
+  if(viewMode!=="focus"||!e.changedTouches[0]||popupOpen())return;
   const tag=(e.target&&e.target.tagName)||"";
   if(tag==="INPUT"||tag==="TEXTAREA")return;
   const dx=e.changedTouches[0].clientX-sx;
