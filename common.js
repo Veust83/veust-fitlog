@@ -245,7 +245,15 @@ function mountShell(active){
   document.addEventListener("visibilitychange",()=>{if(!document.hidden){tick();if(tEnd)lock()}});
 }
 
-/* ===== Appli installable (écran d'accueil) + fonctionnement hors ligne ===== */
-if("serviceWorker" in navigator&&location.protocol==="https:"){
-  window.addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").catch(()=>{})});
+/* ===== Nettoyage : retire l'ancien service worker qui gardait de vieilles copies des pages ===== */
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.getRegistrations().then(rs=>{
+    if(!rs.length)return;
+    Promise.all(rs.map(r=>r.unregister()))
+      .then(()=>window.caches?caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))):null)
+      .then(()=>{
+        let done=false;try{done=sessionStorage.getItem("veust_sw_clean")==="1";sessionStorage.setItem("veust_sw_clean","1")}catch(e){done=true}
+        if(!done)location.reload();
+      }).catch(()=>{});
+  }).catch(()=>{});
 }
