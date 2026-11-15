@@ -14,6 +14,47 @@
 
 <script src="common.js"></script>
 <script>
+/* ===== Chrono global de la séance ===== */
+const SK="veust_session_start";
+let sessStart=parseInt(lsGet(SK,"0"))||0;
+
+function startSessionClock(){
+  if(!sessStart){
+    sessStart=Date.now();
+    lsSet(SK,String(sessStart));
+  }
+}
+function clearSessionClock(){
+  sessStart=0;
+  lsDel(SK);
+  const el=$("sess-dur");
+  if(el) el.remove();
+}
+function fmtSessionDur(ms){
+  const totSec=Math.max(0,Math.floor(ms/1000));
+  const h=Math.floor(totSec/3600);
+  const m=Math.floor((totSec%3600)/60);
+  const s=totSec%60;
+  if(h>0) return `${h}h ${String(m).padStart(2,"0")}m`;
+  return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+}
+function updateSessionClock(){
+  const volEl=$("vol");
+  if(!volEl) return;
+  let badge=$("sess-dur");
+  if(!sessStart){
+    if(badge) badge.remove();
+    return;
+  }
+  if(!badge){
+    badge=document.createElement("span");
+    badge.id="sess-dur";
+    badge.style.cssText="font-size:10px;color:#14b8a6;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;display:block;text-align:right;font-weight:700;margin-top:1px";
+    volEl.parentElement.appendChild(badge);
+  }
+  badge.innerText="⏱ "+fmtSessionDur(Date.now()-sessStart);
+}
+
 /* ===== Moteur d'animation SVG 3D Volumétrique ===== */
 const D=Math.PI/180,C=Math.cos,Sn=Math.sin;
 const SEAT='<rect x="20" y="61" width="32" height="5" rx="2.5" fill="url(#gEq)"/><rect x="17" y="22" width="6" height="42" rx="3" fill="url(#gEq)"/>';
@@ -100,6 +141,7 @@ function frame(ms){
     f.hl.forEach((el,i)=>{const m=f.d.hl[i];if(!m){el.style.display="none";return}el.style.display="";const[a,b]=G[m[0]];L(el,lerp(a,b,m[1]),lerp(a,b,m[2]))});
   });
   updateFocusRings();
+  updateSessionClock();
   requestAnimationFrame(frame);
 }
 
@@ -147,20 +189,22 @@ function openFocus(idx){
 }
 
 function startWorkout(){
+  startSessionClock();
   const idx=prog.exercises.findIndex(e=>e.sets.some(s=>!s.done));
   openFocus(idx>=0?idx:0);
 }
 
 function resetProgress(){
-  if(!confirm("Réinitialiser toutes les séries cochées de cette séance ?"))return;
+  if(!confirm("Réinitialiser toutes les séries cochées et le chrono de cette séance ?"))return;
   prog.exercises.forEach(e=>e.sets.forEach(s=>{s.done=false;delete s.time}));
+  clearSessionClock();
   save();render();
 }
 
 function render(){
   if(viewMode==="list") renderList();
   else renderFocus();
-  collect();refreshHeader();
+  collect();refreshHeader();updateSessionClock();
 }
 
 function renderList(){
@@ -200,7 +244,7 @@ function renderList(){
       </div>
       <div style="flex:1;min-width:0">
         <div style="display:flex;justify-content:space-between;font-size:11px;color:#94a3b8">
-          <span>1 jour d'entraînement</span><span>~ ${durStr}</span>
+          <span>${sessStart?"Séance en cours":"1 jour d'entraînement"}</span><span>~ ${durStr}</span>
         </div>
         <div style="font-size:1rem;font-weight:700;color:#fff;margin-top:.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(prog.title)}</div>
       </div>
@@ -210,7 +254,7 @@ function renderList(){
 
     <div style="display:flex;flex-direction:column;gap:.65rem;margin-top:.5rem">
       <button onclick="resetProgress()" class="btn-reset-prog">RÉINITIALISATION DE LA PROGRESSION</button>
-      <button onclick="startWorkout()" class="btn-start-prog">COMMENCER L'ENTRAÎNEMENT</button>
+      <button onclick="startWorkout()" class="btn-start-prog">${sessStart?"REPRENDRE L'ENTRAÎNEMENT":"COMMENCER L'ENTRAÎNEMENT"}</button>
       <button onclick="finish()" class="btn-full btn-green" style="margin-top:.25rem">✅ Terminer et archiver la séance</button>
       <p id="fm" class="msg" style="color:#22c55e"></p>
     </div>`;
@@ -336,6 +380,7 @@ function getExTargetSec(ex, setIdx){
 }
 
 function toggleFocusExTimer(i, setIdx){
+  startSessionClock();
   if(tEnd>Date.now() && tLabel==="Exercice"){
     exPhaseMax=0; exPhaseTag="";
     stopT();
@@ -345,7 +390,6 @@ function toggleFocusExTimer(i, setIdx){
     const two=isTwoSided(ex);
 
     if(two){
-      // Séquence 2 parties : Côté 1 -> 5s changement -> Côté 2 -> Validation + Repos
       exPhaseMax=sec; exPhaseTag="Côté 1/2";
       timer(sec,"Exercice",false,()=>{
         exPhaseMax=5; exPhaseTag="Changement !";
@@ -358,7 +402,6 @@ function toggleFocusExTimer(i, setIdx){
         });
       });
     }else{
-      // Séquence simple 1 partie
       exPhaseMax=sec; exPhaseTag="En cours";
       timer(sec,"Exercice",false,()=>{
         exPhaseMax=0; exPhaseTag="";
@@ -370,6 +413,7 @@ function toggleFocusExTimer(i, setIdx){
 }
 
 function toggleFocusRest(i){
+  startSessionClock();
   if(tEnd>Date.now() && tLabel==="Repos") stopT();
   else{
     exPhaseMax=0; exPhaseTag="";
@@ -387,7 +431,6 @@ function updateFocusRings(){
   const isTimed=(curSet.unit==="sec"||curSet.unit==="min");
   const two=isTwoSided(ex);
 
-  // 1. Anneau de gauche (Exercice chronométré avec Play / Côté 1 / 5s transition / Côté 2)
   const exArc=$("focus-ex-arc"), exTxt=$("focus-ex-txt"), exCap=$("focus-ex-cap");
   if(exArc && exTxt && isTimed){
     const maxExSec=exPhaseMax||getExTargetSec(ex,activeIdx)||30;
@@ -413,7 +456,6 @@ function updateFocusRings(){
     }
   }
 
-  // 2. Anneau central (Repos)
   const rArc=$("focus-rest-arc"), rTxt=$("focus-rest-txt");
   if(rArc && rTxt){
     const maxS=rest(ex)||90;
@@ -445,6 +487,7 @@ function nowHM(){
 }
 
 function addFocusSet(i,setIdx){
+  startSessionClock();
   const ex=prog.exercises[i];
   const w=parseFloat($("f-w").value)||0;
   const r=parseInt($("f-r").value)||0;
@@ -469,9 +512,12 @@ function finish(){
   const m=$("fm");
   if(!prog.exercises.some(e=>e.sets.some(s=>s.done))){alert("Coche au moins une série avant de terminer.");return}
   if(!confirm("Enregistrer la séance dans l'historique et remettre les séries à zéro ?"))return;
-  const note=(prompt("Une note pour cette séance ? (facultatif)")||"").trim();
-  addHist(sessionFromProg(prog,note));
+  const durStr=sessStart?fmtSessionDur(Date.now()-sessStart):"";
+  const userNote=(prompt("Une note pour cette séance ? (facultatif)")||"").trim();
+  const fullNote=[durStr?`Durée : ${durStr}`:"",userNote].filter(Boolean).join(" • ");
+  addHist(sessionFromProg(prog,fullNote));
   prog.exercises.forEach(e=>e.sets.forEach(s=>{s.done=false;delete s.time}));
+  clearSessionClock();
   save();viewMode="list";render();stopT();
   if(m){m.innerText="Séance enregistrée dans l'historique (onglet Stats).";m.style.display="block";setTimeout(()=>m.style.display="none",4000)}
 }
