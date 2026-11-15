@@ -7,53 +7,80 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<main>
-  <div class="card row">
-    <label style="font-size:.75rem;color:#cbd5e1">Poids du jour (kg) :</label>
-    <input type="number" step="0.1" id="bw" class="inp bw" oninput="setBW(this.value)">
-  </div>
-  <div id="list" style="display:flex;flex-direction:column;gap:.875rem"></div>
-  <button onclick="finish()" class="btn-full btn-green">✅ Terminer la séance</button>
-  <p id="fm" class="msg" style="color:#22c55e"></p>
-</main>
+<main id="app-main"></main>
 
 <script src="common.js"></script>
 <script>
-/* ===== Moteur d'animation : cinématique inverse 2 segments =====
-   Chaque exercice donne la position de la hanche (h), de l'épaule (s), de la main (a) et du pied (f).
-   Genoux et coudes sont calculés. db:1 = haltère. Vue de profil (side_bend : vue de face). */
+/* ===== Moteur d'animation SVG 3D Volumétrique (Cinématique inverse 2 segments) ===== */
 const D=Math.PI/180,C=Math.cos,Sn=Math.sin;
-const SEAT='<rect x="22" y="61" width="30" height="4" rx="2" fill="#334155"/><rect x="19" y="24" width="5" height="40" rx="2" fill="#334155"/>';
+const SEAT='<rect x="20" y="61" width="32" height="5" rx="2.5" fill="url(#gEq)"/><rect x="17" y="22" width="6" height="42" rx="3" fill="url(#gEq)"/>';
 const E={
-  bike:{k:-1,e:1,hl:[['thigh',0,1]],eq:'<circle cx="52" cy="68" r="9" stroke="#334155" fill="none"/><rect x="31" y="56" width="14" height="3" rx="1" fill="#334155"/><line x1="72" y1="40" x2="72" y2="68" stroke="#334155" stroke-width="2"/>',P:(p,t)=>({h:[40,52],s:[56,32],a:[72,40],f:[52+9*C(t*5),68+9*Sn(t*5)]})},
-  plank:{k:-1,e:1,hl:[['torso',.05,.6]],eq:'',P:p=>({h:[59,58+1.5*p],s:[35,56],a:[49,70],f:[95,73]})},
+  bike:{k:-1,e:1,hl:[['thigh',0,1]],eq:'<circle cx="52" cy="68" r="9.5" stroke="url(#gEq)" stroke-width="2.5" fill="none"/><rect x="30" y="55" width="15" height="4" rx="2" fill="url(#gEq)"/><line x1="72" y1="38" x2="72" y2="68" stroke="url(#gEq)" stroke-width="3"/>',P:(p,t)=>({h:[40,52],s:[56,32],a:[72,40],f:[52+9*C(t*5),68+9*Sn(t*5)]})},
+  plank:{k:-1,e:1,hl:[['torso',.05,.65]],eq:'',P:p=>({h:[59,58+1.5*p],s:[35,56],a:[49,70],f:[95,73]})},
   leg_ext:{k:-1,e:1,hl:[['thigh',0,1]],eq:SEAT,P:p=>{const g=D*90*(1-p);return{h:[35,57],s:[34,33],a:[48,52],f:[55+20*C(g),57+20*Sn(g)]}}},
   leg_curl:{k:-1,e:1,hl:[['thigh',.1,1]],eq:SEAT,P:p=>{const g=D*(15+85*p);return{h:[35,57],s:[34,33],a:[48,52],f:[55+20*C(g),57+20*Sn(g)]}}},
-  chest_push:{k:-1,e:1,hl:[['torso',.55,.95],['uarm',0,.5]],eq:SEAT,P:p=>({h:[30,58],s:[32,34],a:[40+30*p,38],f:[48,80]})},
+  chest_push:{k:-1,e:1,hl:[['torso',.5,.95],['uarm',0,.55]],eq:SEAT,P:p=>({h:[30,58],s:[32,34],a:[40+30*p,38],f:[48,80]})},
   row_pull:{k:-1,e:1,hl:[['torso',.45,1]],eq:SEAT,P:p=>({h:[30,58],s:[32-3*p,34],a:[74-22*p,41],f:[48,80]})},
-  lat_pull:{k:-1,e:1,hl:[['uarm',0,1],['torso',.5,1]],eq:SEAT+'<rect x="36" y="52" width="16" height="3" rx="1" fill="#475569"/>',P:p=>({h:[38,60],s:[40,36],a:[52+4*p,12+18*p],f:[52,82]})},
-  shoulder:{k:-1,e:1,hl:[['uarm',0,.6],['torso',.8,1]],eq:SEAT,P:p=>({h:[30,58],s:[32,34],a:[44,30-22*p],f:[48,80]})},
-  shrug:{k:-1,e:-1,db:1,hl:[['torso',.78,1],['uarm',0,.4]],eq:SEAT,P:p=>{const q=Math.min(1,p*1.5),sy=34-6*q;return{h:[30,58],s:[32,sy],a:[34,sy+27],f:[48,80]}}},
-  curl:{k:-1,e:1,hl:[['uarm',0,1]],eq:SEAT+'<line x1="36" y1="40" x2="48" y2="54" stroke="#475569" stroke-width="5" stroke-linecap="round"/>',P:p=>{const g=D*(20-120*p);return{h:[30,60],s:[34,36],a:[43+14*C(g),47+14*Sn(g)],f:[48,82]}}},
-  incline_curl:{k:-1,e:1,db:1,hl:[['uarm',0,1],['farm',0,.4]],eq:'<line x1="28" y1="66" x2="10" y2="36" stroke="#334155" stroke-width="7" stroke-linecap="round"/><rect x="24" y="64" width="20" height="4" rx="2" fill="#334155"/>',P:p=>{const g=D*(85-155*p);return{h:[34,62],s:[22,41],a:[24+14*C(g),55+14*Sn(g)],f:[56,80]}}},
+  lat_pull:{k:-1,e:1,hl:[['uarm',0,1],['torso',.5,1]],eq:SEAT+'<rect x="36" y="52" width="16" height="3.5" rx="1.5" fill="url(#gEq)"/>',P:p=>({h:[38,60],s:[40,36],a:[52+4*p,12+18*p],f:[52,82]})},
+  shoulder:{k:-1,e:1,hl:[['uarm',0,.65],['torso',.75,1]],eq:SEAT,P:p=>({h:[30,58],s:[32,34],a:[44,30-22*p],f:[48,80]})},
+  shrug:{k:-1,e:-1,db:1,hl:[['torso',.75,1],['uarm',0,.4]],eq:SEAT,P:p=>{const q=Math.min(1,p*1.5),sy=34-6*q;return{h:[30,58],s:[32,sy],a:[34,sy+27],f:[48,80]}}},
+  curl:{k:-1,e:1,hl:[['uarm',0,1]],eq:SEAT+'<line x1="36" y1="40" x2="48" y2="54" stroke="url(#gEq)" stroke-width="5.5" stroke-linecap="round"/>',P:p=>{const g=D*(20-120*p);return{h:[30,60],s:[34,36],a:[43+14*C(g),47+14*Sn(g)],f:[48,82]}}},
+  incline_curl:{k:-1,e:1,db:1,hl:[['uarm',0,1],['farm',0,.4]],eq:'<line x1="28" y1="66" x2="10" y2="36" stroke="url(#gEq)" stroke-width="7" stroke-linecap="round"/><rect x="24" y="64" width="20" height="4.5" rx="2" fill="url(#gEq)"/>',P:p=>{const g=D*(85-155*p);return{h:[34,62],s:[22,41],a:[24+14*C(g),55+14*Sn(g)],f:[56,80]}}},
   hammer:{k:-1,e:1,db:1,hl:[['uarm',0,1],['farm',0,.5]],eq:SEAT,P:p=>{const g=D*(88-150*p);return{h:[30,58],s:[32,34],a:[33+14*C(g),48+14*Sn(g)],f:[48,80]}}},
   triceps:{k:-1,e:1,hl:[['uarm',0,1]],eq:'',P:p=>{const g=D*90*(1+p);return{h:[40,56],s:[60,40],a:[47+14*C(g),42+14*Sn(g)],f:[40,84]}}},
-  side_bend:{k:-1,e:-1,db:1,hl:[['torso',.05,.6]],eq:'',P:p=>{const a=D*(-3+27*p),sx=60+24*Sn(a),sy=40-24*C(a);return{h:[60,40],s:[sx,sy],a:[sx+5,sy+26],f:[60,79]}}},
-  bridge:{k:-1,e:-1,hl:[['thigh',0,.6],['torso',0,.2]],eq:'',P:p=>{const g=-28*D*p;return{h:[22+24*C(g),73+24*Sn(g)],s:[22,73],a:[46,75],f:[64,76]}}}
+  side_bend:{k:-1,e:-1,db:1,hl:[['torso',.05,.65]],eq:'',P:p=>{const a=D*(-3+27*p),sx=60+24*Sn(a),sy=40-24*C(a);return{h:[60,40],s:[sx,sy],a:[sx+5,sy+26],f:[60,79]}}},
+  bridge:{k:-1,e:-1,hl:[['thigh',0,.65],['torso',0,.25]],eq:'',P:p=>{const g=-28*D*p;return{h:[22+24*C(g),73+24*Sn(g)],s:[22,73],a:[46,75],f:[64,76]}}}
 };
+
+const SVG_DEFAULTS = `<defs>
+  <linearGradient id="gBody" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#e2e8f0"/><stop offset="45%" stop-color="#64748b"/><stop offset="100%" stop-color="#1e293b"/>
+  </linearGradient>
+  <linearGradient id="gLimb" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%" stop-color="#cbd5e1"/><stop offset="55%" stop-color="#475569"/><stop offset="100%" stop-color="#0f172a"/>
+  </linearGradient>
+  <linearGradient id="gEq" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#64748b"/><stop offset="50%" stop-color="#334155"/><stop offset="100%" stop-color="#0f172a"/>
+  </linearGradient>
+  <radialGradient id="gHead" cx="35%" cy="30%" r="65%">
+    <stop offset="0%" stop-color="#f8fafc"/><stop offset="55%" stop-color="#94a3b8"/><stop offset="100%" stop-color="#1e293b"/>
+  </radialGradient>
+  <linearGradient id="gMuscle" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#fb923c"/><stop offset="50%" stop-color="#ef4444"/><stop offset="100%" stop-color="#991b1b"/>
+  </linearGradient>
+  <filter id="glow3d" x="-30%" y="-30%" width="160%" height="160%">
+    <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000" flood-opacity="0.75"/>
+  </filter>
+  <filter id="mGlow" x="-40%" y="-40%" width="180%" height="180%">
+    <feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+</defs>`;
+
 function ik(a,b,l1,l2,k){
   const dx=b[0]-a[0],dy=b[1]-a[1],d=Math.min(Math.hypot(dx,dy),l1+l2-.01)||.01,ux=dx/d,uy=dy/d;
   const x=(l1*l1-l2*l2+d*d)/(2*d),h=Math.sqrt(Math.max(0,l1*l1-x*x));
   return[a[0]+ux*x-uy*h*k,a[1]+uy*x+ux*h*k];
 }
-function figSVG(type){
+function figSVG(type, big=false){
   const d=E[type]||E.chest_push;
-  return `<svg viewBox="0 0 120 90" class="fig" data-t="${E[type]?type:'chest_push'}"><line x1="4" y1="78" x2="116" y2="78" stroke="#1b2234" stroke-width="2"/>${d.eq}
-  <g stroke-linecap="round" fill="none"><line class="th" stroke="#64748b" stroke-width="7"/><line class="sh" stroke="#7c8aa0" stroke-width="5.5"/><line class="to" stroke="#64748b" stroke-width="9"/><line class="ua" stroke="#94a3b8" stroke-width="5"/><line class="fa" stroke="#aab6c7" stroke-width="4.5"/>
-  <line class="hl" stroke-width="11"/><line class="hl" stroke-width="11"/></g><circle class="hd" r="6.5" fill="#cbd5e1"/><circle class="ha" r="${d.db?4.4:2.6}" fill="${d.db?'#f59e0b':'#22c55e'}"/></svg>`;
+  return `<svg viewBox="0 0 120 90" class="${big?'fig-big':'fig-thumb'}" data-t="${E[type]?type:'chest_push'}">${SVG_DEFAULTS}
+  <ellipse cx="60" cy="81" rx="44" ry="3.5" fill="rgba(0,0,0,0.6)"/>
+  <line x1="8" y1="79" x2="112" y2="79" stroke="#1e293b" stroke-width="1.5"/>${d.eq}
+  <g stroke-linecap="round" fill="none" filter="url(#glow3d)">
+    <line class="th" stroke="url(#gLimb)" stroke-width="8.5"/>
+    <line class="sh" stroke="url(#gLimb)" stroke-width="6.5"/>
+    <line class="to" stroke="url(#gBody)" stroke-width="11"/>
+    <line class="hl" stroke="url(#gMuscle)" stroke-width="11.5" filter="url(#mGlow)"/>
+    <line class="hl" stroke="url(#gMuscle)" stroke-width="10.5" filter="url(#mGlow)"/>
+    <line class="ua" stroke="url(#gLimb)" stroke-width="6"/>
+    <line class="fa" stroke="url(#gLimb)" stroke-width="5"/>
+  </g>
+  <circle class="jt-k" r="3.2" fill="#334155"/><circle class="jt-e" r="2.6" fill="#475569"/>
+  <circle class="hd" r="7.2" fill="url(#gHead)" filter="url(#glow3d)"/>
+  <circle class="ha" r="${d.db?4.8:3.2}" fill="${d.db?'#f59e0b':'#14b8a6'}" filter="url(#glow3d)"/></svg>`;
 }
 let figs=[];
-function collect(){figs=[...document.querySelectorAll("svg.fig")].map(s=>({s,d:E[s.dataset.t],q:c=>s.querySelector("."+c),hl:s.querySelectorAll(".hl")}))}
+function collect(){figs=[...document.querySelectorAll("svg[data-t]")].map(s=>({s,d:E[s.dataset.t],q:c=>s.querySelector("."+c),hl:s.querySelectorAll(".hl")}))}
 function L(el,a,b){el.setAttribute("x1",a[0]);el.setAttribute("y1",a[1]);el.setAttribute("x2",b[0]);el.setAttribute("y2",b[1])}
 const lerp=(a,b,f)=>[a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f];
 function frame(ms){
@@ -62,68 +89,302 @@ function frame(ms){
     const o=f.d.P(p,t),K=ik(o.h,o.f,20,20,f.d.k),El=ik(o.s,o.a,14,14,f.d.e);
     const G={torso:[o.h,o.s],thigh:[o.h,K],shin:[K,o.f],uarm:[o.s,El],farm:[El,o.a]};
     L(f.q("to"),...G.torso);L(f.q("th"),...G.thigh);L(f.q("sh"),...G.shin);L(f.q("ua"),...G.uarm);L(f.q("fa"),...G.farm);
+    const jk=f.q("jt-k");if(jk){jk.setAttribute("cx",K[0]);jk.setAttribute("cy",K[1])}
+    const je=f.q("jt-e");if(je){je.setAttribute("cx",El[0]);je.setAttribute("cy",El[1])}
     const vx=o.s[0]-o.h[0],vy=o.s[1]-o.h[1],n=Math.hypot(vx,vy)||1,hd=f.q("hd");
-    hd.setAttribute("cx",o.s[0]+vx/n*9);hd.setAttribute("cy",o.s[1]+vy/n*9);
+    hd.setAttribute("cx",o.s[0]+vx/n*9.5);hd.setAttribute("cy",o.s[1]+vy/n*9.5);
     const ha=f.q("ha");ha.setAttribute("cx",o.a[0]);ha.setAttribute("cy",o.a[1]);
-    f.hl.forEach((el,i)=>{const m=f.d.hl[i];if(!m){el.style.display="none";return}const[a,b]=G[m[0]];L(el,lerp(a,b,m[1]),lerp(a,b,m[2]))});
+    f.hl.forEach((el,i)=>{const m=f.d.hl[i];if(!m){el.style.display="none";return}el.style.display="";const[a,b]=G[m[0]];L(el,lerp(a,b,m[1]),lerp(a,b,m[2]))});
   });
+  updateFocusRing();
   requestAnimationFrame(frame);
 }
 
-/* ===== Séance ===== */
-let prog=getProg();
+/* ===== État de navigation : Vue Liste ("list") vs Vue Focus ("focus") ===== */
+let prog=getProg(), viewMode="list", curIdx=0;
 const rest=e=>e.restSec!==undefined?e.restSec:90;
 function save(){saveProg(prog)}
 
+function fmtExSummary(ex){
+  const s=ex.sets||[];
+  if(!s.length)return "";
+  const u=s[0].unit==="sec"?"s":s[0].unit==="min"?" min":" kg";
+  const same=s.every(x=>x.weight===s[0].weight&&x.reps===s[0].reps);
+  if(same){
+    if(s[0].unit==="sec"||s[0].unit==="min") return `${s.length}x${s[0].reps}${u}`;
+    return `${s.length}x${s[0].reps}x${s[0].weight} kg`;
+  }
+  return s.map(x=>`${x.reps}x${x.weight} kg`).join(" - ");
+}
+
+function getProgPct(){
+  let tot=0,dn=0;
+  prog.exercises.forEach(e=>e.sets.forEach(s=>{tot++;if(s.done)dn++}));
+  return tot?Math.round(dn/tot*100):0;
+}
+
+function openFocus(idx){
+  curIdx=Math.max(0,Math.min(prog.exercises.length-1,idx));
+  viewMode="focus";
+  render();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function startWorkout(){
+  const idx=prog.exercises.findIndex(e=>e.sets.some(s=>!s.done));
+  openFocus(idx>=0?idx:0);
+}
+
+function resetProgress(){
+  if(!confirm("Réinitialiser toutes les séries cochées de cette séance ?"))return;
+  prog.exercises.forEach(e=>e.sets.forEach(s=>{s.done=false;delete s.time}));
+  save();render();
+}
+
 function render(){
-  const pill=(i,v,cur)=>`<button onclick="setRest(${i},${v})" class="pill${cur===v?" on":""}">${v}s</button>`;
-  $("list").innerHTML=prog.exercises.map((ex,i)=>{
-    const cur=rest(ex);
-    const sets=ex.sets.map((s,j)=>`
-      <div class="set">
-        <span class="num">#${j+1}</span>
-        <div><input type="number" step="0.5" value="${s.weight}" onchange="upd(${i},${j},'weight',this.value)" class="inp"><small>kg</small></div>
-        <div><input type="number" value="${s.reps}" onchange="upd(${i},${j},'reps',this.value)" class="inp"><small>${esc(s.unit||"reps")}</small></div>
-        <div class="acts">
-          ${s.unit==="sec"?`<button onclick="exTimer(${s.reps},${i},${j})" class="tm">⏱ ${s.reps}s</button>`:""}
-          <button onclick="done(${i},${j})" class="chk${s.done?" on":""}">✓</button>
-        </div>
-      </div>`).join("");
-    return `<div class="card">
-      <div class="exh">${figSVG(ex.animType)}
-        <div style="min-width:0"><h3>${esc(ex.name)}</h3><p class="m">${esc(ex.muscle)}</p><p class="n">${esc(ex.note)}</p></div></div>
-      <div class="rest"><span>Pause après série :</span><div>${pill(i,60,cur)}${pill(i,90,cur)}${pill(i,0,cur)}</div></div>
-      <div>${sets}</div></div>`}).join("");
+  if(viewMode==="list") renderList();
+  else renderFocus();
   collect();refreshHeader();
 }
-function setRest(i,s){prog.exercises[i].restSec=s;save();render()}
-function upd(i,j,f,v){prog.exercises[i].sets[j][f]=parseFloat(v)||0;save()}
-function done(i,j){
-  const s=prog.exercises[i].sets[j];
-  s.done=!s.done;save();render();
-  if(s.done&&rest(prog.exercises[i])>0)timer(rest(prog.exercises[i]),"Repos",true);
+
+/* ===== 1. RENDU VUE LISTE (Style capture #2) ===== */
+function renderList(){
+  const pct=getProgPct();
+  const R=22, C_LEN=2*Math.PI*R, dash=C_LEN*(1-pct/100);
+  const estMin=Math.max(15, prog.exercises.reduce((a,e)=>a+e.sets.length*2.5,0)|0);
+  const h=Math.floor(estMin/60), m=estMin%60;
+  const durStr=(h?h+"h ":"")+m+"min";
+
+  const rows=prog.exercises.map((ex,i)=>{
+    const dn=ex.sets.filter(s=>s.done).length, tot=ex.sets.length;
+    const epct=tot?Math.round(dn/tot*100):0;
+    return `<div class="ex-list-item" onclick="openFocus(${i})">
+      ${figSVG(ex.animType,false)}
+      <div class="ex-list-info">
+        <h3>${esc(ex.name)}</h3>
+        <p class="ex-list-sub">${esc(fmtExSummary(ex))}</p>
+      </div>
+      <div class="ex-list-pct ${epct===100?'done':''}">${epct}%</div>
+    </div>`;
+  }).join("");
+
+  $("app-main").innerHTML=`
+    <div class="card row" style="padding:.6rem .75rem">
+      <label style="font-size:.75rem;color:#cbd5e1">Poids du jour (kg) :</label>
+      <input type="number" step="0.1" id="bw" value="${esc(getBW())}" class="inp bw" oninput="setBW(this.value)">
+    </div>
+
+    <div class="prog-banner">
+      <div class="ring-sm-wrap">
+        <svg width="56" height="56" viewBox="0 0 56 56">
+          <circle cx="28" cy="28" r="${R}" stroke="#1e293b" stroke-width="4" fill="none"/>
+          <circle cx="28" cy="28" r="${R}" stroke="#14b8a6" stroke-width="4" fill="none" stroke-linecap="round"
+            stroke-dasharray="${C_LEN.toFixed(1)}" stroke-dashoffset="${dash.toFixed(1)}" transform="rotate(-90 28 28)"/>
+        </svg>
+        <span class="ring-sm-txt">${pct}%</span>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#94a3b8">
+          <span>1 jour d'entraînement</span><span>~ ${durStr}</span>
+        </div>
+        <div style="font-size:1rem;font-weight:700;color:#fff;margin-top:.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(prog.title)}</div>
+      </div>
+    </div>
+
+    <div class="ex-list-wrap">${rows}</div>
+
+    <div style="display:flex;flex-direction:column;gap:.65rem;margin-top:.5rem">
+      <button onclick="resetProgress()" class="btn-reset-prog">RÉINITIALISATION DE LA PROGRESSION</button>
+      <button onclick="startWorkout()" class="btn-start-prog">COMMENCER L'ENTRAÎNEMENT</button>
+      <button onclick="finish()" class="btn-full btn-green" style="margin-top:.25rem">✅ Terminer et archiver la séance</button>
+      <p id="fm" class="msg" style="color:#22c55e"></p>
+    </div>`;
 }
-function exTimer(sec,i,j){
-  timer(sec,"Exercice",false,()=>{
-    prog.exercises[i].sets[j].done=true;save();render();
-    const r=rest(prog.exercises[i]);
-    if(r>0)timer(r,"Repos",false); // pas de tap ici : iOS refuserait le raccourci
+
+/* ===== 2. RENDU VUE FOCUS (Style capture #1) ===== */
+function renderFocus(){
+  const ex=prog.exercises[curIdx];
+  const tot=ex.sets.length, dn=ex.sets.filter(s=>s.done).length;
+  const nextIdx=ex.sets.findIndex(s=>!s.done);
+  const activeIdx=nextIdx>=0?nextIdx:tot-1;
+  const curSet=ex.sets[activeIdx]||{weight:0,reps:12,unit:"reps"};
+  const R=36, C_LEN=2*Math.PI*R;
+  const setDash=C_LEN*(1-(tot?dn/tot:0));
+
+  // Séries réalisées aujourd'hui (ordre décroissant comme sur l'app)
+  const todaySets=ex.sets.map((s,idx)=>({...s,idx})).filter(s=>s.done).reverse();
+  const todayHtml=todaySets.length?`
+    <div class="hist-group">
+      <div class="hist-date">Aujourd'hui (${new Date().toLocaleDateString("fr-CH")})</div>
+      ${todaySets.map(s=>`<div class="hist-row" onclick="uncheckSet(${curIdx},${s.idx})">
+        <span class="hist-num">#${s.idx+1}</span>
+        <span class="hist-val">${s.unit==="sec"?`${s.reps} sec`:s.unit==="min"?`${s.reps} min`:`${s.weight} kg × ${s.reps} réps`}</span>
+        <span class="hist-time">${esc(s.time||"✓")} ✕</span>
+      </div>`).join("")}
+    </div>`:"";
+
+  // Historique des séances précédentes pour cet exercice
+  const pastSessions=getHist().filter(h=>(h.exercises||[]).some(x=>x.name.toLowerCase()===ex.name.toLowerCase())).reverse().slice(0,3);
+  const pastHtml=pastSessions.map(h=>{
+    const found=h.exercises.find(x=>x.name.toLowerCase()===ex.name.toLowerCase());
+    const parts=(found.summary||"").split(",").map(s=>s.trim()).filter(Boolean);
+    return `<div class="hist-group">
+      <div class="hist-date">${esc(h.date)}</div>
+      ${parts.map((p,k)=>`<div class="hist-row"><span class="hist-num">#${k+1}</span><span class="hist-val">${esc(p)}</span><span class="hist-time">Archivé</span></div>`).join("")}
+    </div>`;
+  }).join("");
+
+  $("app-main").innerHTML=`
+    <div class="focus-top">
+      <button onclick="viewMode='list';render()" class="btn-circle" title="Retour à la liste">←</button>
+      <div class="focus-step">${curIdx+1}/${prog.exercises.length} <span style="color:#94a3b8;font-weight:500">${esc((ex.muscle||"").split(/[(&]/)[0].trim())}</span></div>
+      <div style="display:flex;gap:.4rem">
+        <button onclick="openFocus(${curIdx-1})" class="btn-pill-nav" ${curIdx===0?"disabled":""}>‹</button>
+        <button onclick="openFocus(${curIdx+1})" class="btn-pill-nav" ${curIdx===prog.exercises.length-1?"disabled":""}>›</button>
+      </div>
+    </div>
+
+    <div class="focus-stage">
+      ${figSVG(ex.animType,true)}
+    </div>
+
+    <div style="margin-top:.25rem">
+      <h2 class="focus-title">${esc(ex.name)}</h2>
+      <p class="focus-rec">Poids programmé : <strong>${curSet.weight} kg</strong> • Pause : 
+        <button onclick="cycleRest(${curIdx})" class="rest-inline">${rest(ex)}s ↻</button>
+      </p>
+      ${ex.note?`<p class="focus-note">${esc(ex.note)}</p>`:""}
+    </div>
+
+    <div class="rings-grid">
+      <div class="ring-col">
+        <div class="ring-box">
+          <svg width="86" height="86" viewBox="0 0 86 86">
+            <circle cx="43" cy="43" r="${R}" stroke="#11343b" stroke-width="5" fill="none"/>
+            <circle cx="43" cy="43" r="${R}" stroke="#14b8a6" stroke-width="5" fill="none" stroke-linecap="round"/>
+          </svg>
+          <span class="ring-big-txt">${curSet.reps}${curSet.unit==="sec"?"s":curSet.unit==="min"?"m":""}</span>
+        </div>
+        <span class="ring-cap">Répétitions<br>requises</span>
+      </div>
+
+      <div class="ring-col">
+        <div class="ring-box" onclick="timer(${rest(ex)||90},'Repos',true)" style="cursor:pointer">
+          <svg width="86" height="86" viewBox="0 0 86 86">
+            <circle cx="43" cy="43" r="${R}" stroke="#3b1219" stroke-width="5" fill="none"/>
+            <circle id="focus-rest-arc" cx="43" cy="43" r="${R}" stroke="#dc2626" stroke-width="5" fill="none" stroke-linecap="round"
+              stroke-dasharray="${C_LEN.toFixed(1)}" stroke-dashoffset="0" transform="rotate(-90 43 43)"/>
+          </svg>
+          <span class="ring-big-txt" id="focus-rest-txt" style="font-size:.95rem">🔒</span>
+        </div>
+        <span class="ring-cap">Repos<br>(toucher = lancer)</span>
+      </div>
+
+      <div class="ring-col">
+        <div class="ring-box">
+          <svg width="86" height="86" viewBox="0 0 86 86">
+            <circle cx="43" cy="43" r="${R}" stroke="#3b1219" stroke-width="5" fill="none"/>
+            <circle cx="43" cy="43" r="${R}" stroke="#ef4444" stroke-width="5" fill="none" stroke-linecap="round"
+              stroke-dasharray="${C_LEN.toFixed(1)}" stroke-dashoffset="${setDash.toFixed(1)}" transform="rotate(-90 43 43)"/>
+          </svg>
+          <span class="ring-big-txt">${dn}/${tot}</span>
+        </div>
+        <span class="ring-cap">Séries<br>réalisées</span>
+      </div>
+    </div>
+
+    <div class="focus-input-bar">
+      <div class="f-inp-box">
+        <input type="number" step="0.5" id="f-w" value="${curSet.weight}" class="f-inp">
+        <span>Kilogrammes</span>
+      </div>
+      <div class="f-inp-box">
+        <input type="number" id="f-r" value="${curSet.reps}" class="f-inp">
+        <span>${curSet.unit==="sec"?"Secondes":curSet.unit==="min"?"Minutes":"Répétitions"}</span>
+      </div>
+      ${curSet.unit==="sec"?`<button onclick="focusExTimer(${curIdx},${activeIdx})" class="btn-plus" style="background:#fb923c" title="Lancer le chrono exercice">⏱</button>`:""}
+      <button onclick="addFocusSet(${curIdx},${activeIdx})" class="btn-plus" title="Valider la série">+</button>
+    </div>
+
+    <div class="row" style="margin-top:.4rem">
+      <span style="font-size:.8rem;font-weight:600;color:#64748b">Historique des séries</span>
+      <a href="stats.html" style="font-size:.8rem;color:#14b8a6;text-decoration:none;font-weight:600">Graphique ›</a>
+    </div>
+    ${todayHtml || '<p class="hint" style="text-align:center;padding:.5rem 0">Appuie sur <strong>+</strong> pour valider ta série #'+(activeIdx+1)+'.</p>'}
+    ${pastHtml}
+  `;
+}
+
+function updateFocusRing(){
+  const arc=$("focus-rest-arc"), txt=$("focus-rest-txt");
+  if(!arc||!txt)return;
+  const R=36, C_LEN=2*Math.PI*R;
+  if(tEnd>Date.now()){
+    const rem=Math.max(0,Math.ceil((tEnd-Date.now())/1000));
+    const maxS=rest(prog.exercises[curIdx])||90;
+    const ratio=Math.min(1,rem/maxS);
+    arc.style.strokeDashoffset=(C_LEN*(1-ratio)).toFixed(1);
+    arc.setAttribute("stroke","#22c55e");
+    txt.innerText=String(Math.floor(rem/60)).padStart(2,"0")+":"+String(rem%60).padStart(2,"0");
+  }else{
+    arc.style.strokeDashoffset="0";
+    arc.setAttribute("stroke","#dc2626");
+    txt.innerText="🔒";
+  }
+}
+
+function cycleRest(i){
+  const cur=rest(prog.exercises[i]);
+  prog.exercises[i].restSec=cur===90?60:cur===60?0:90;
+  save();render();
+}
+
+function nowHM(){
+  const d=new Date();
+  return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+}
+
+function addFocusSet(i,setIdx){
+  const ex=prog.exercises[i];
+  const w=parseFloat($("f-w").value)||0;
+  const r=parseInt($("f-r").value)||0;
+  // Si toutes les séries étaient déjà cochées, on ajoute une série bonus
+  let target=ex.sets[setIdx];
+  if(ex.sets.every(s=>s.done)){
+    target={weight:w,reps:r,unit:ex.sets[0]?.unit||"reps",done:true,time:nowHM()};
+    ex.sets.push(target);
+  }else{
+    target.weight=w;target.reps=r;target.done=true;target.time=nowHM();
+  }
+  save();render();
+  if(rest(ex)>0) timer(rest(ex),"Repos",true);
+}
+
+function focusExTimer(i,setIdx){
+  const r=parseInt($("f-r").value)||30;
+  timer(r,"Exercice",false,()=>{
+    addFocusSet(i,setIdx);
   });
 }
+
+function uncheckSet(i,setIdx){
+  if(!confirm("Annuler la validation de la série #"+(setIdx+1)+" ?"))return;
+  prog.exercises[i].sets[setIdx].done=false;
+  save();render();
+}
+
 function finish(){
   const m=$("fm");
   if(!prog.exercises.some(e=>e.sets.some(s=>s.done))){alert("Coche au moins une série avant de terminer.");return}
   if(!confirm("Enregistrer la séance dans l'historique et remettre les séries à zéro ?"))return;
   const note=(prompt("Une note pour cette séance ? (facultatif)")||"").trim();
   addHist(sessionFromProg(prog,note));
-  prog.exercises.forEach(e=>e.sets.forEach(s=>s.done=false));
-  save();render();stopT();
-  m.innerText="Séance enregistrée dans l'historique (onglet Stats).";m.style.display="block";
-  setTimeout(()=>m.style.display="none",4000);
+  prog.exercises.forEach(e=>e.sets.forEach(s=>{s.done=false;delete s.time}));
+  save();viewMode="list";render();stopT();
+  if(m){m.innerText="Séance enregistrée dans l'historique (onglet Stats).";m.style.display="block";setTimeout(()=>m.style.display="none",4000)}
 }
 
 mountShell("index.html");
-$("bw").value=getBW();
 render();
 requestAnimationFrame(frame);
 </script>
