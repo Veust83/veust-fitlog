@@ -35,22 +35,13 @@ const PROGRAMS={
   ]})}
 };
 
-/* Animation choisie automatiquement d'après le nom de l'exercice */
-const AUTO=[
-  [/shrug|haussement/i,"shrug"],
-  [/marteau|hammer/i,"hammer"],
-  [/curl.*inclin|inclin.*curl/i,"incline_curl"],
-  [/inclinaisons?\s+lat|side\s*bend|flexions?\s+lat/i,"side_bend"]
-];
-function fixTypes(p){
-  p.exercises.forEach(e=>{const m=AUTO.find(a=>a[0].test(e.name||""));if(m)e.animType=m[1]});
-  return p;
-}
+/* Le choix de l'animation se fait dans animations.js (Anim.resolve) d'après le nom, le matériel et le muscle */
+function fixTypes(p){return p}
 function normProg(p){
   return fixTypes({
     title:p.title||p.name||"Séance personnalisée",
     exercises:p.exercises.map(e=>({
-      name:e.name,muscle:e.muscle||"",animType:e.animType||"chest_push",
+      name:e.name,muscle:e.muscle||"",equipment:e.equipment||e.materiel||"",animType:e.animType||"",
       restSec:e.restSec!==undefined?e.restSec:90,note:e.note||e.notes||"",
       sets:(e.sets||[]).map(s=>({weight:parseFloat(s.weight)||0,reps:parseInt(s.reps)||12,unit:s.unit||"reps",done:Boolean(s.done||s.completed)}))
     }))
