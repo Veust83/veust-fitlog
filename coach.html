@@ -122,16 +122,57 @@ async function pasteJson(){
 }
 function clearJson(){$("jb").value="";$("if").style.display="none";$("jb").focus()}
 
+/* ===== Import JSON : format de l'appli ET format Gemini =====
+   Format Gemini : liste de programmes, "sets": 3, "reps": "10-12", "rest": 90, "notes": "..."
+   Les séries sont créées une par une ; pour une fourchette de reps, l'objectif est le haut de la fourchette. */
+let PENDING=[];
+function parseReps(r){
+  const t=String(r==null?"":r).toLowerCase();
+  const n=(t.match(/\d+(?:[.,]\d+)?/g)||[]).map(x=>parseFloat(x.replace(",",".")));
+  const unit=/min/.test(t)?"min":/\d\s*(s|sec|seconde)/.test(t)?"sec":"reps";
+  return{reps:n.length?Math.round(Math.max(...n)):12,unit,range:n.length>1?t.replace(/\s/g,""):""};
+}
+function fromAny(p,i){
+  const exs=(p.exercises||p.exercices||[]).map(e=>{
+    let sets;
+    if(Array.isArray(e.sets))sets=e.sets;
+    else{
+      const n=Math.max(1,parseInt(e.sets||e.series)||3),r=parseReps(e.reps),w=[].concat(e.weight??0);
+      sets=Array.from({length:n},(_,k)=>({weight:parseFloat(w[k]??w[0])||0,reps:r.reps,unit:e.unit||r.unit}));
+      if(r.range)e._range=r.range;
+    }
+    const note=e.note||e.notes||"";
+    return{
+      name:e.name||e.nom||"Exercice",muscle:e.muscle||e.muscles||"",equipment:e.equipment||e.materiel||"",
+      animType:e.animType||"",restSec:e.restSec??e.rest??e.repos??90,
+      note:e._range?`Objectif ${e._range} reps. ${note}`.trim():note,
+      sets
+    };
+  });
+  return normProg({title:p.title||p.name||p.nom||`Séance ${i+1}`,exercises:exs});
+}
+function readJson(){
+  const raw=$("jb").value.trim().replace(/^```(?:json)?/i,"").replace(/```$/,"").trim();
+  const d=JSON.parse(raw);
+  const list=Array.isArray(d)?d:Array.isArray(d.programs)?d.programs:Array.isArray(d.programmes)?d.programmes:[d];
+  const progs=list.filter(p=>p&&Array.isArray(p.exercises||p.exercices)).map(fromAny).filter(p=>p.exercises.length);
+  if(!progs.length)throw 0;
+  return progs;
+}
+function startProg(i){
+  if(hasProgress()&&!confirm("La séance en cours a des séries cochées. Les remplacer ?"))return;
+  saveProg(PENDING[i]);
+  location.href="index.html";
+}
 function imp(){
-  const f=$("if");
-  try{
-    const raw=$("jb").value.trim().replace(/^```json/i,"").replace(/^```/,"").replace(/```$/,"").trim();
-    const p=JSON.parse(raw);
-    if(!Array.isArray(p.exercises))throw 0;
-    if(hasProgress()&&!confirm("La séance en cours a des séries cochées. Les remplacer ?"))return;
-    saveProg(normProg(p));
-    location.href="index.html";
-  }catch(e){f.innerText="Erreur : format JSON non valide.";f.style.display="block"}
+  const f=$("if");f.style.display="none";
+  try{PENDING=readJson()}
+  catch(e){f.style.color="#fb7185";f.innerText="Erreur : format JSON non valide.";f.style.display="block";return}
+  if(PENDING.length===1)return startProg(0);
+  f.style.color="#94a3b8";
+  f.innerHTML="Le JSON contient "+PENDING.length+" séances, choisis laquelle démarrer :<div style='display:flex;flex-direction:column;gap:.4rem;margin-top:.5rem'>"
+    +PENDING.map((p,i)=>`<button onclick="startProg(${i})" class="btn-sub btn-prog">${esc(p.title)} (${p.exercises.length} exercices)</button>`).join("")+"</div>";
+  f.style.display="block";
 }
 </script>
 </body>
