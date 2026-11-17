@@ -174,6 +174,56 @@
         }
       ],
       "note": "Durée : 1h 14m • 8/10"
+    },
+    {
+      "id": 1794930460026,
+      "date": "17.11.2026",
+      "title": "Haut du Corps - Épaules & Supersets Banc Bras (Safe Lombaires)",
+      "bodyweight": 109.5,
+      "tonnage": 7381,
+      "exercises": [
+        {
+          "name": "Échauffement articulaire (Épaules, Coudes & Coiffe)",
+          "summary": "90s, 90s"
+        },
+        {
+          "name": "Échauffement progressif Chest Press",
+          "summary": "15 @ 20kg, 8 @ 30kg"
+        },
+        {
+          "name": "Développé assis machine (Chest Press)",
+          "summary": "13 @ 45kg, 12 @ 45kg, 12 @ 45kg"
+        },
+        {
+          "name": "Tirage horizontal (Appui buste / Poulie basse)",
+          "summary": "12 @ 50kg, 12 @ 50kg, 12 @ 50kg"
+        },
+        {
+          "name": "Tirage vertical poitrine (Lat Pulldown)",
+          "summary": "12 @ 45kg, 12 @ 45kg, 12 @ 45kg"
+        },
+        {
+          "name": "Élévations latérales machine assise",
+          "summary": "12 @ 20kg, 12 @ 20kg, 13 @ 20kg"
+        },
+        {
+          "name": "Curl incliné assis haltères",
+          "summary": "12 @ 10kg, 10 @ 10kg"
+        },
+        {
+          "name": "Barre au front avec haltères sur banc",
+          "summary": "12 @ 10kg, 10 @ 10kg"
+        },
+        {
+          "name": "Curl marteau assis haltères",
+          "summary": "12 @ 8kg, 12 @ 8kg"
+        },
+        {
+          "name": "Extension triceps assise au-dessus de la tête",
+          "summary": "12 @ 16kg, 12 @ 16kg"
+        }
+      ],
+      "note": "Durée : 44:26 • 7/10"
     }
   ]
 }
