@@ -172,6 +172,8 @@ pushdown_single:{n:"Extension triceps 1 bras",g:"Triceps",sc:.88,hand:["grip","n
 dip_machine:{n:"Dips machine",g:"Triceps",hl:[["ua",0,1]],eq:SEAT+ring(62,50,2.5,2)+rect(60,50,4,29),
   dl:o=>[[o.a[0]-4,o.a[1],o.a[0]+8,o.a[1],3],[o.a[0]+8,o.a[1],62,50,2.5]],
   P:p=>({...SIT,a:[38,44+17*p]})},
+overhead_ext:{n:"Extension triceps au-dessus de la tête",g:"Triceps",hand:"db",hl:[["ua",0,1]],eq:SEAT,
+  P:p=>{const s=[32,34],el=[37,18];return{h:[30,58],s,el,a:pol(el,14,122+152*p),f:[48,78]}}},
 skull_crusher:{n:"Barre au front",g:"Triceps",hand:"bar",hl:[["ua",0,1]],eq:BENCH,
   P:p=>({h:[54,53.5],s:[30,53.5],a:pol([30,39.5],14,-195+105*p),f:[70,78]})},
 
@@ -330,10 +332,11 @@ function byName(n,m){
     if(has(/inclin/))return"incline_press";
     return"chest_push";
   }
-  if(has(/tirage|pulldown|lat pull|traction/))return has(/horizontal/)?"cable_row":has(/serre|neutre|close|supination/)?"lat_pull_close":"lat_pull";
-  if(has(/rowing|\brow\b/))return has(/poulie|cable|basse/)?"cable_row":has(/pronation|large/)?"row_high":"row_pull";
+  if(has(/tirage|pulldown|lat pull|traction/))return has(/horizontal/)?(has(/appui|ventral|pectoral|buste/)?"row_pull":"cable_row"):has(/serre|neutre|close|supination/)?"lat_pull_close":"lat_pull";
+  if(has(/rowing|\brow\b/))return has(/appui|ventral|pectoral|buste/)?"row_pull":has(/poulie|cable|basse/)?"cable_row":has(/pronation|large/)?"row_high":"row_pull";
   if(has(/kickback/))return"triceps";
   if(has(/curl/))return has(/marteau|hammer/)?"hammer":has(/inclin/)?"incline_curl":has(/poulie|cable/)?"cable_curl":"curl";
+  if(has(/triceps|extension|dips|barre au front|skull/)&&has(/au dessus|dessus de la tete|overhead|nuque|francais/))return"overhead_ext";
   if(has(/triceps|extension|dips|barre au front|skull/))
     return has(/front|skull|\bez\b|couche/)?"skull_crusher":has(/dips|assis/)?"dip_machine":has(/unilat|1 bras|un bras|une main/)?"pushdown_single":"pushdown";
   return null;
