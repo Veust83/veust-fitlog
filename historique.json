@@ -224,6 +224,56 @@
         }
       ],
       "note": "Durée : 44:26 • 7/10"
+    },
+    {
+      "id": 1795537052051,
+      "date": "24.11.2026",
+      "title": "Leg Day & Core Safe (Mollets Inclus — Reprise)",
+      "bodyweight": 109.5,
+      "tonnage": 20019,
+      "exercises": [
+        {
+          "name": "Échauffement vélo assis & mobilité douce",
+          "summary": "5 min @ 0kg"
+        },
+        {
+          "name": "Échauffement progressif Presse à cuisses",
+          "summary": "15 @ 61kg, 8 @ 93kg"
+        },
+        {
+          "name": "Presse à cuisses (Focus Fessiers — Pieds Hauts)",
+          "summary": "12 @ 125kg, 12 @ 120kg, 14 @ 120kg"
+        },
+        {
+          "name": "Pont fessier au sol lesté (Glute Bridge Safe Dos)",
+          "summary": "15 @ 20kg, 15 @ 20kg, 15 @ 20kg"
+        },
+        {
+          "name": "Leg Extension assis (Finition en pause)",
+          "summary": "12 @ 55kg, 12 @ 55kg, 12 @ 55kg"
+        },
+        {
+          "name": "Leg Curl assis (Ischio-jambiers)",
+          "summary": "12 @ 50kg, 6 @ 50kg"
+        },
+        {
+          "name": "Abducteurs machine (Variante Buste Penché / Grand Fessier)",
+          "summary": "15 @ 60kg, 15 @ 60kg, 14 @ 60kg"
+        },
+        {
+          "name": "Adducteurs machine (Variante Tempo & Pause fermée)",
+          "summary": "15 @ 55kg, 15 @ 55kg"
+        },
+        {
+          "name": "Mollets à la presse à cuisses (Calf Press)",
+          "summary": "15 @ 90kg, 15 @ 90kg, 12 @ 90kg, 11 @ 90kg"
+        },
+        {
+          "name": "Rotation du buste machine assise (Contrôle lent)",
+          "summary": "15 @ 30kg, 15 @ 30kg"
+        }
+      ],
+      "note": "Durée : 1h 11m • Dur"
     }
   ]
 }
